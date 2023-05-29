@@ -347,7 +347,6 @@ static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool gauge)
 		if(result!=0) {
 			putchar('\n');
 			logprint("Checksum mismatch: %s\n", target->path);
-			logprint("Expected: %.*s\nObtained: %s\n", HASH_HEX_SIZE,target->hash, hash);
 			rc = EXIT_BADCHECK; goto END;
 		}
 	}
