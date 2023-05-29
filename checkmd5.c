@@ -24,6 +24,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <limits.h>
+#include <time.h>
 #include <unistd.h>
 #include <signal.h>
 #include <fcntl.h>
@@ -113,14 +114,13 @@ int main(int argc, const char **argv)
 		return EXIT_CKSUM;
 	}
 
-	if(g_logfile) {
-		// Log all command line arguments used to invoke this instance.
-		fputs(argv[0], g_logfile);
-		for(int i=1; i<argc; ++i) {
-			logprint(false, " %s", argv[i]);
-		}
-		fputc('\n', g_logfile);
+	// Log the start time and all of the list file names on the command line.
+	const time_t tnow = time(NULL);
+	logprint(false, "Start: %sLists:", ctime(&tnow));
+	for(int i=0; i<nsumfiles; ++i) {
+		logprint(false, " %s", sumfiles[i]);
 	}
+	logprint(false, "\n");
 
 	int rc = 0;
 	size_t ntargets = 0;
