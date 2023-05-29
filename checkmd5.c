@@ -104,7 +104,7 @@ int main(int argc, const char **argv)
 		}
 	}
 	if(nsumfiles<1) {
-		fprintf(stderr, "Usage: checkmd5 [--log <logfile>] [--gauge] <checksum-file> ...\n");
+		fprintf(stderr, "Usage: checkmd5 [--log=<logfile>] [--gauge] <checksum-file> ...\n");
 		return EXIT_CKSUM;
 	}
 
@@ -311,8 +311,8 @@ static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool gauge)
 			// Progress indication and user cancel request handling.
 			const unsigned int prog = (1000*nprocessed) / total;
 			if(prog != oldprog) {
-				if(gauge && (prog%10)==0) printf("%u\n", prog/10);
-				else printf("\rChecking: %.1F%%", (float)prog/10.0);
+				if(!gauge) printf("\rChecking: %.1F%%", (float)prog/10.0);
+				else if ((prog%10)==0) printf("%u\n", prog/10);
 				fflush(stdout);
 				oldprog = prog;
 
