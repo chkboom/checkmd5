@@ -85,7 +85,7 @@ int main(int argc, const char **argv)
 		const char *arg = sumfiles[0];
 		if(!strncmp(arg, "--log", 5)) {
 			const char *lfname = "/var/log/checkmd5.log";
-			if(arg[5]=='=' && arg[6]!='\0') lfname = arg+5;
+			if(arg[5]=='=' && arg[6]!='\0') lfname = arg+6;
 			else if(arg[5]!='\0') {
 				nsumfiles = 0; // Trigger usage message.
 				break;
@@ -340,9 +340,7 @@ static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool gauge)
 		}
 		const int result = memcmp(target->hash, hash, HASH_HEX_SIZE);
 		if(g_logfile) {
-			fprintf(g_logfile, "Result: %s MD5=%s ", target->path, hash);
-			if(result==0) fprintf(g_logfile, "(PASS)\n");
-			else fprintf(g_logfile, "(FAIL=%d)\n", result);
+			fprintf(g_logfile, "%s: %s MD5=%s\n", (result?"Failed":"Passed"), target->path, hash);
 		}
 		if(result!=0) {
 			putchar('\n');
