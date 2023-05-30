@@ -32,6 +32,12 @@
 #include <sys/types.h>
 #include <sys/select.h>
 #include <termios.h>
+#ifdef I18N
+	#include <libintl.h>
+	#define TR(S) gettext(S)
+#else
+	#define TR(S)
+#endif // !I18N
 #include "md5.h"
 
 #define BUFFER_BLOCKS 32
@@ -77,6 +83,12 @@ static void logprint(bool console, const char *fmt, ...)
 
 int main(int argc, const char **argv)
 {
+	#if I18N
+	setlocale (LC_ALL, "");
+	bindtextdomain("checkmd5", "/usr/share/locale/");
+	textdomain("checkmd5");
+	#endif
+
 	bool force=false, gauge=false, verbose=false;
 	if(argc<1) {
 		fprintf(stderr, "No name argument.\n");
@@ -146,7 +158,7 @@ int main(int argc, const char **argv)
 	sigaction(SIGUSR1, &sa, NULL);
 	sigaction(SIGUSR2, &sa, NULL);
 
-	printf("Press [Esc] to abort the integrity check.\n");
+	printf("%s\n", TR("Press [Esc] to abort the integrity check."));
 	struct termios tio;
 	tcgetattr(0, &tio);
 	const tcflag_t oldlflag = tio.c_lflag;
@@ -289,6 +301,7 @@ static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool force, b
 	// Check each file
 	size_t npassed = 0;
 	unsigned long long nprocbytes = 0;
+	const char *checkmsg = TR("Checking");
 	for(size_t ixtarget = 0; ixtarget < ntargets; ++ixtarget) {
 		struct CheckTarget *target = targets[ixtarget];
 		logprint(verbose, "Target: %s MD5=%.*s size=%llu\n", target->path,
@@ -302,9 +315,9 @@ static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool force, b
 		unsigned int oldprog = 1001;
 		struct MD5Context md5ctx;
 		MD5Init(&md5ctx);
-		static const char *checkfmt = "\rChecking: %.1F%%";
+		static const char *checkfmt = "\r%s: %.1F%%";
 		if(!gauge) {
-			printf(checkfmt, 0.0);
+			printf(checkfmt, checkmsg, 0.0);
 			fflush(stdout);
 		}
 		for(off_t remain=target->size; remain>0;) {
@@ -318,7 +331,7 @@ static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool force, b
 			const unsigned int prog = (1000*nprocbytes) / total;
 			if(prog != oldprog) {
 				int rp = 0;
-				if(!gauge) rp = printf(checkfmt, (float)prog/10.0);
+				if(!gauge) rp = printf(checkfmt, checkmsg, (float)prog/10.0);
 				else if ((prog%10)==0) rp = printf("%u\n", prog/10);
 				if(rp>0) fflush(stdout);
 
@@ -352,7 +365,7 @@ static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool force, b
 		if(result==0) ++npassed;
 		else {
 			if(!verbose) putchar('\n');
-			printf("Checksum mismatch: %s\n", target->path);
+			printf("%s: %s\n", TR("Checksum mismatch"), target->path);
 			rc = EXIT_BADCHECK;
 			if(!force) goto END;
 		}
