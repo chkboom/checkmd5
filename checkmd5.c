@@ -70,7 +70,7 @@ static void logprint(bool console, const char *fmt, ...)
 	}
 	if(console) {
 		va_start(ap, fmt);
-		vfprintf(stderr, fmt, ap);
+		vprintf(fmt, ap);
 		va_end(ap);
 	}
 }
@@ -146,7 +146,7 @@ int main(int argc, const char **argv)
 	sigaction(SIGUSR1, &sa, NULL);
 	sigaction(SIGUSR2, &sa, NULL);
 
-	fprintf(stderr, "Press [Esc] to abort the integrity check.\n");
+	printf("Press [Esc] to abort the integrity check.\n");
 	struct termios tio;
 	tcgetattr(0, &tio);
 	const tcflag_t oldlflag = tio.c_lflag;
@@ -303,7 +303,10 @@ static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool force, b
 		struct MD5Context md5ctx;
 		MD5Init(&md5ctx);
 		static const char *checkfmt = "\rChecking: %.1F%%";
-		if(!gauge) fprintf(stderr, checkfmt, 0.0);
+		if(!gauge) {
+			printf(checkfmt, 0.0);
+			fflush(stdout);
+		}
 		for(off_t remain=target->size; remain>0;) {
 			off_t nread = (remain>bufsize ? bufsize : remain);
 			nread = read(targetfd, buffer, nread);
@@ -314,8 +317,11 @@ static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool force, b
 			// Progress indication and user cancel request handling.
 			const unsigned int prog = (1000*nprocbytes) / total;
 			if(prog != oldprog) {
-				if(!gauge) fprintf(stderr, checkfmt, (float)prog/10.0);
-				else if ((prog%10)==0) printf("%u\n", prog/10);
+				int rp = 0;
+				if(!gauge) rp = printf(checkfmt, (float)prog/10.0);
+				else if ((prog%10)==0) rp = printf("%u\n", prog/10);
+				if(rp>0) fflush(stdout);
+
 				oldprog = prog;
 
 				// Check if the user has requested an early exit.
@@ -323,7 +329,7 @@ static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool force, b
 				FD_ZERO(&fds);
 				FD_SET(0, &fds);
 				if(g_signal || (select(1, &fds, NULL, NULL, &(struct timeval){0}) && getchar() == 27)) {
-					fputc('\n', stderr);
+					putchar('\n');
 					logprint(true, "Aborted at: %.1F%% ", (float)prog/10.0);
 					if(!g_signal) logprint(true, "(ESC)\n");
 					else logprint(true, "(signal %d)\n", g_signal);
@@ -332,7 +338,7 @@ static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool force, b
 			}
 		}
 		close(targetfd);
-		if(verbose) fputc('\n', stderr);
+		if(verbose) putchar('\n');
 
 		unsigned char digest[HASH_SIZE];
 		MD5Final(digest, &md5ctx);
@@ -345,13 +351,13 @@ static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool force, b
 		logprint(verbose, "%s: %s MD5=%s\n", (result?"Failed":"Passed"), target->path, hash);
 		if(result==0) ++npassed;
 		else {
-			if(!verbose) fputc('\n', stderr);
-			fprintf(stderr, "Checksum mismatch: %s\n", target->path);
+			if(!verbose) putchar('\n');
+			printf("Checksum mismatch: %s\n", target->path);
 			rc = EXIT_BADCHECK;
 			if(!force) goto END;
 		}
 	}
-	if(!verbose) fputc('\n', stderr);
+	if(!verbose) putchar('\n');
 	logprint(true, "Result: %zu/%zu passed\n", npassed, ntargets);
 
  END:
