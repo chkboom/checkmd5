@@ -50,8 +50,8 @@ enum ExitValues {
 	EXIT_OK = 0,
 	EXIT_BADCHECK = 1,
 	EXIT_ABORTED = 2,
-	EXIT_SYSTEM = 3,
-	EXIT_CKSUM = 4
+	EXIT_BADLIST = 3,
+	EXIT_SYSTEM = 4,
 };
 
 struct CheckTarget {
@@ -115,7 +115,7 @@ int main(int argc, const char **argv)
 	if(argc<1) {
 		fprintf(stderr, "Usage: checkmd5 [--force] [--verbose]"
 			" [--log=<logfile>] [--gauge] [--] <checksum-file> ...\n");
-		return EXIT_CKSUM;
+		return EXIT_SYSTEM;
 	}
 
 	// Log the start time and all of the list file names on the command line.
@@ -130,7 +130,7 @@ int main(int argc, const char **argv)
 	size_t ntargets = 0;
 	struct CheckTarget **targets = getTargets(&ntargets, argv, argc);
 	if(!targets) {
-		rc = EXIT_CKSUM;
+		rc = EXIT_BADLIST;
 		goto END;
 	}
 
@@ -160,9 +160,10 @@ int main(int argc, const char **argv)
 	rc = checkmd5(targets, ntargets, force, gauge, verbose);
 
 	switch(rc){
-		case 0: puts(TR("Integrity check passed.")); break;
-		case 2: puts(TR("Integrity check aborted.")); break;
-		default: puts(TR("Integrity check failed.")); break;
+		case EXIT_OK: puts(TR("The integrity check has passed.")); break;
+		case EXIT_BADCHECK: puts(TR("The integrity check has failed.")); break;
+		case EXIT_ABORTED: puts(TR("The integrity check was aborted.")); break;
+		default: puts(TR("The integrity check could not be completed.")); break;
 	}
 	tio.c_lflag = oldlflag;
 	tcsetattr(0, TCSANOW, &tio);
