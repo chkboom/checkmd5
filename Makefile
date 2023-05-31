@@ -8,8 +8,9 @@ clean:
 	rm -f checkmd5
 	rm -rf i18n/mo
 
-checkmd5: checkmd5.o md5.o
-	$(CC) $(LFLAGS) $^ -o $@
+OBJS=checkmd5.o md5.o
+checkmd5: $(OBJS) version.h
+	$(CC) $(LFLAGS) $(OBJS) -o $@
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 

@@ -40,6 +40,7 @@
 	#define TR(S)
 #endif // !I18N
 #include "md5.h"
+#include "version.h"
 
 #define BUFFER_BLOCKS 32
 #define HASH_SIZE 16 // MD5 hash
@@ -113,8 +114,8 @@ int main(int argc, const char **argv)
 		--argc;
 	}
 	if(argc<1) {
-		fprintf(stderr, "Usage: checkmd5 [--force] [--verbose]"
-			" [--log=<logfile>] [--gauge] [--] <checksum-file> ...\n");
+		fprintf(stderr, "checkMD5 - Version " VERSION "\nUsage: checkmd5 [--force]"
+			" [--verbose] [--log=<logfile>] [--gauge] [--] <checksum-file> ...\n");
 		return EXIT_SYSTEM;
 	}
 
