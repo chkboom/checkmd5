@@ -24,6 +24,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <limits.h>
+#include <errno.h>
 #include <time.h>
 #include <unistd.h>
 #include <signal.h>
@@ -83,60 +84,51 @@ static void logprint(bool console, const char *fmt, ...)
 
 int main(int argc, const char **argv)
 {
+	if(argc<1) return EXIT_SYSTEM;
 	#if I18N
 	setlocale (LC_ALL, "");
 	bindtextdomain("checkmd5", "/usr/share/locale/");
 	textdomain("checkmd5");
 	#endif
 
+	++argv; --argc;
 	bool force=false, gauge=false, verbose=false;
-	if(argc<1) {
-		fprintf(stderr, "No name argument.\n");
-		return EXIT_SYSTEM;
-	}
-
-	const char **sumfiles = argv+1;
-	int nsumfiles = argc-1;
-	while(nsumfiles>0) {
-		const char *arg = sumfiles[0];
+	while(argc>0 && (*argv)[0]=='-') {
+		const char *arg = argv[0];
 		if(!strcmp(arg, "--force")) force = true;
 		else if(!strcmp(arg, "--gauge")) gauge = true;
 		else if(!strcmp(arg, "--verbose")) verbose = true;
-		else if(!strncmp(arg, "--log", 5)) {
-			const char *lfname = "/var/log/checkmd5.log";
-			if(arg[5]=='=' && arg[6]!='\0') lfname = arg+6;
-			else if(arg[5]!='\0') {
-				nsumfiles = -1; // Trigger usage message.
-				break;
-			}
+		else if(!strncmp(arg, "--log=", 6) && arg[6]!='\0') {
+			const char *lfname = arg+6;
 			g_logfile = fopen(lfname, "w");
 			if(!g_logfile) {
-				fprintf(stderr, "ERROR: Unable to open log file: %s\n", lfname);
+				fprintf(stderr, "ERROR: %s: %s\n", strerror(errno), lfname);
 				return EXIT_SYSTEM;
 			}
 		} else {
-			break; // Remainder of arguments are checksum files.
+			if(strcmp(arg, "--")) argc = 0; // Triggers usage message.
+			break; // The remaining arguments are checksum list files.
 		}
-		++sumfiles;
-		--nsumfiles;
+		++argv;
+		--argc;
 	}
-	if(nsumfiles<1) {
+	if(argc<1) {
 		fprintf(stderr, "Usage: checkmd5 [--force] [--verbose]"
-			" [--log=<logfile>] [--gauge] <checksum-file> ...\n");
+			" [--log=<logfile>] [--gauge] [--] <checksum-file> ...\n");
 		return EXIT_CKSUM;
 	}
 
 	// Log the start time and all of the list file names on the command line.
 	const time_t tnow = time(NULL);
 	logprint(false, "Start: %sLists:", ctime(&tnow));
-	for(int i=0; i<nsumfiles; ++i) {
-		logprint(false, " %s", sumfiles[i]);
+	for(int i=0; i<argc; ++i) {
+		logprint(false, " %s", argv[i]);
 	}
 	logprint(false, "\n");
 
 	int rc = 0;
 	size_t ntargets = 0;
-	struct CheckTarget **targets = getTargets(&ntargets, sumfiles, nsumfiles);
+	struct CheckTarget **targets = getTargets(&ntargets, argv, argc);
 	if(!targets) {
 		rc = EXIT_CKSUM;
 		goto END;
@@ -158,7 +150,7 @@ int main(int argc, const char **argv)
 	sigaction(SIGUSR1, &sa, NULL);
 	sigaction(SIGUSR2, &sa, NULL);
 
-	printf("%s\n", TR("Press [Esc] to abort the integrity check."));
+	puts(TR("Press [Esc] to abort the integrity check."));
 	struct termios tio;
 	tcgetattr(0, &tio);
 	const tcflag_t oldlflag = tio.c_lflag;
@@ -167,6 +159,11 @@ int main(int argc, const char **argv)
 
 	rc = checkmd5(targets, ntargets, force, gauge, verbose);
 
+	switch(rc){
+		case 0: puts(TR("Integrity check passed.")); break;
+		case 2: puts(TR("Integrity check aborted.")); break;
+		default: puts(TR("Integrity check failed.")); break;
+	}
 	tio.c_lflag = oldlflag;
 	tcsetattr(0, TCSANOW, &tio);
 
@@ -189,19 +186,20 @@ static struct CheckTarget **getTargets(size_t *restrict pntargets, const char **
 		const char *filename = sumfiles[i];
 		FILE *sumfile = fopen(filename, "r");
 		if(!sumfile) {
-			logprint(true, "ERROR: Cannot open: %s\n", filename);
+			logprint(true, "ERROR: %s: %s\n", strerror(errno), filename);
 			goto ERROR;
 		}
 
 		char line[HASH_HEX_SIZE+16+PATH_MAX]; // md5 + spaces + path
 		int nline = 0;
-		const char *error = NULL, *errparam = NULL;
+		const char *error = NULL;
+		errno = 0;
 		while(fgets(line, sizeof(line), sumfile)) {
 			++nline;
 			size_t len = strlen(line);
 			while(line[len] <= ' ') line[len--] = '\0'; // Trim leading whitespace.
 			if(len < (HASH_HEX_SIZE+1+1)) { // Minimum 32x md5 + 1x space + 1x path
-				error = "line too short";
+				error = TR("Line too short");
 				break;
 			}
 
@@ -214,7 +212,7 @@ static struct CheckTarget **getTargets(size_t *restrict pntargets, const char **
 				line[nhex++] = c;
 			}
 			if(nhex!=HASH_HEX_SIZE) {
-				error = "invalid hex or too short for MD5";
+				error = TR("Invalid hex or too short for MD5");
 				break;
 			}
 
@@ -225,47 +223,42 @@ static struct CheckTarget **getTargets(size_t *restrict pntargets, const char **
 				++endspace;
 			}
 			if(endspace<=nhex || endspace==len) {
-				error = "no space or path";
+				error = TR("No space or path");
 				break;
 			}
 
 			// Add to the check list.
 			struct CheckTarget **newtargets = reallocarray(targets,
 				ntargets+1, sizeof(struct CheckTarget *));
-			if(!newtargets) {
-				error = "not enough memory";
-				break;
-			}
+			if(!newtargets) break;
 			targets = newtargets;
 			len -= endspace-2; // +1 end space offset, +1 null terminator.
 			struct CheckTarget *target = malloc(sizeof(struct CheckTarget) + len);
-			if(!target) {
-				error = "not enough memory";
-				break;
-			}
+			if(!target) break;
 			targets[ntargets++] = target;
 
 			memcpy(target->hash, line, HASH_HEX_SIZE);
 			memcpy(target->path, line+endspace, len);
 			// Obtain file size
 			int fd = open(target->path, O_RDONLY);
-			if (fd == -1) error = "cannot open";
+			if (fd == -1) error = TR("Cannot open");
 			else {
 				struct stat sb;
-				if (!error && fstat(fd, &sb)!=0) error = "cannot stat";
+				if (!error && fstat(fd, &sb)!=0) error = TR("Cannot stat");
 				target->size = sb.st_size;
 				target->blksize = sb.st_blksize;
 				close(fd);
 			}
-			if(error) {
-				errparam = target->path;
-				break;
-			}
+			if(error) break;
 		}
 		fclose(sumfile);
 		if(error) {
-			if(errparam) logprint(true, "ERROR: %s: %s\n", error, errparam);
-			else logprint(true, "ERROR (%s line %d): %s.\n", filename, nline, error);
+			if(!errno) logprint(true, "ERROR (%s line %d): %s.\n", filename, nline, error);
+			else if(!error) logprint(true, "ERROR: %s\n", strerror(errno));
+			else {
+				logprint(true, "ERROR: %s (%s): %s\n",
+					error, strerror(errno), targets[ntargets-1]->path);
+			}
 			goto ERROR;
 		}
 	}
@@ -284,32 +277,34 @@ static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool force, b
 {
 	int rc = 0;
 	// Calculate total size
-	unsigned long long total = 0;
+	unsigned long long nbtotal = 0;
 	size_t bufsize = 0;
 	for(size_t i = 0; i < ntargets; ++i) {
 		struct CheckTarget *restrict target = targets[i];
-		total += target->size;
+		nbtotal += target->size;
 		if(bufsize < target->blksize) bufsize = target->blksize;
 	}
 	bufsize *= BUFFER_BLOCKS;
 	unsigned char *buffer = aligned_alloc((size_t)sysconf(_SC_PAGESIZE), bufsize);
 	if(!buffer) {
-		logprint(true, "ERROR: Out of memory.\n");
+		logprint(true, "ERROR: %s\n", strerror(errno));
 		rc = EXIT_SYSTEM; goto END;
 	}
 
 	// Check each file
-	size_t npassed = 0;
-	unsigned long long nprocbytes = 0;
+	size_t npassed=0;
+	unsigned long long nbproc=0, nbpassed=0;
 	const char *checkmsg = TR("Checking");
 	for(size_t ixtarget = 0; ixtarget < ntargets; ++ixtarget) {
 		struct CheckTarget *target = targets[ixtarget];
-		logprint(verbose, "Target: %s MD5=%.*s size=%llu\n", target->path,
-			HASH_HEX_SIZE,target->hash, (unsigned long long)target->size);
+		logprint(verbose, "Target: %.*s %s\n", HASH_HEX_SIZE,target->hash, target->path);
 		int targetfd = open(target->path, O_RDONLY);
 		if (targetfd < 0) {
-			logprint(true, "ERROR: Cannot open target: %s\n", target->path);
-			rc = EXIT_BADCHECK; goto END;
+			logprint(true, "%s: %s\n", strerror(errno), target->path);
+			rc = EXIT_BADCHECK;
+			if(!force) goto END;
+			nbproc += target->size;
+			continue;
 		}
 
 		unsigned int oldprog = 1001;
@@ -325,10 +320,10 @@ static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool force, b
 			nread = read(targetfd, buffer, nread);
 			MD5Update(&md5ctx, buffer, (unsigned int)nread);
 			remain -= nread;
-			nprocbytes += nread;
+			nbproc += nread;
 
 			// Progress indication and user cancel request handling.
-			const unsigned int prog = (1000*nprocbytes) / total;
+			const unsigned int prog = (1000*nbproc) / nbtotal;
 			if(prog != oldprog) {
 				int rp = 0;
 				if(!gauge) rp = printf(checkfmt, checkmsg, (float)prog/10.0);
@@ -343,9 +338,9 @@ static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool force, b
 				FD_SET(0, &fds);
 				if(g_signal || (select(1, &fds, NULL, NULL, &(struct timeval){0}) && getchar() == 27)) {
 					putchar('\n');
-					logprint(true, "Aborted at: %.1F%% ", (float)prog/10.0);
-					if(!g_signal) logprint(true, "(ESC)\n");
-					else logprint(true, "(signal %d)\n", g_signal);
+					logprint(verbose, "Aborted: %.1F%% ", (float)prog/10.0);
+					if(!g_signal) logprint(verbose, "(ESC)\n");
+					else logprint(verbose, "(signal %d)\n", g_signal);
 					rc = EXIT_ABORTED; goto END;
 				}
 			}
@@ -361,17 +356,20 @@ static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool force, b
 			snprintf(hash+(2*i), 3, "%02X", digest[i]);
 		}
 		const int result = memcmp(target->hash, hash, HASH_HEX_SIZE);
-		logprint(verbose, "%s: %s MD5=%s\n", (result?"Failed":"Passed"), target->path, hash);
-		if(result==0) ++npassed;
-		else {
+		logprint(verbose, "%s: %s %s\n", (result?"Failed":"Passed"), hash, target->path);
+		if(result==0) {
+			++npassed;
+			nbpassed += target->size;
+			if(!verbose && nbproc==nbtotal) putchar('\n');
+		} else {
 			if(!verbose) putchar('\n');
 			printf("%s: %s\n", TR("Checksum mismatch"), target->path);
 			rc = EXIT_BADCHECK;
 			if(!force) goto END;
 		}
 	}
-	if(!verbose) putchar('\n');
-	logprint(true, "Result: %zu/%zu passed\n", npassed, ntargets);
+	logprint(verbose, "Result: %zu/%zu targets (%llu/%llu bytes) passed\n",
+		npassed, ntargets, nbpassed, nbtotal);
 
  END:
 	if(buffer) free(buffer);
