@@ -318,9 +318,8 @@ static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool force, b
 			fflush(stdout);
 		}
 		for(off_t remain=target->size; remain>0;) {
-			off_t nread = (remain>bufsize ? bufsize : remain);
-			nread = read(targetfd, buffer, nread);
-			MD5Update(&md5ctx, buffer, (unsigned int)nread);
+			const ssize_t nread = read(targetfd, buffer, bufsize);
+			MD5Update(&md5ctx, buffer, nread);
 			remain -= nread;
 			nbproc += nread;
 
