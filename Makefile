@@ -1,4 +1,3 @@
-CC = clang
 CFLAGS += -std=c17 -Wall -DI18N -fpie -flto -Ofast
 LFLAGS += -Wall -pie -flto -Ofast
 
