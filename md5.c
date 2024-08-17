@@ -20,17 +20,17 @@
 #include <endian.h>
 #include "md5.h"
 
-static void MD5Transform(uint32_t buf[4], uint32_t const in[16]);
+static inline void MD5Transform(uint32_t buf[restrict 4], uint32_t const in[restrict 16]);
 #if (__BYTE_ORDER == __LITTLE_ENDIAN)
 #define byteReverse(buf, len)	/* Nothing */
 #else
-static void byteReverse(uint8_t *restrict buf, unsigned longs);
+static inline void byteReverse(uint8_t *restrict buf, unsigned longs);
 
 #ifndef ASM_MD5
 /*
  * Note: this code is harmless on little-endian machines.
  */
-static void byteReverse(uint8_t *restrict buf, unsigned longs)
+static inline void byteReverse(uint8_t *restrict buf, unsigned longs)
 {
 	do {
 		const uint32_t t = (uint32_t)((unsigned)buf[3] << 8 | buf[2]) << 16 |
@@ -46,38 +46,34 @@ static void byteReverse(uint8_t *restrict buf, unsigned longs)
  * Start MD5 accumulation.  Set bit count to 0 and buffer to mysterious
  * initialization constants.
  */
-void MD5Init(struct MD5Context *restrict ctx)
+void MD5Init(struct MD5Context *restrict const ctx)
 {
 	ctx->buf[0] = 0x67452301;
 	ctx->buf[1] = 0xefcdab89;
 	ctx->buf[2] = 0x98badcfe;
 	ctx->buf[3] = 0x10325476;
 
-	ctx->bits[0] = 0;
-	ctx->bits[1] = 0;
+	ctx->bytes[0] = 0;
+	ctx->bytes[1] = 0;
 }
 
 /*
  * Update context to reflect the concatenation of another buffer full
  * of bytes.
  */
-void MD5Update(struct MD5Context *ctx, const uint8_t *restrict buf, size_t len)
+void MD5Update(struct MD5Context *restrict const ctx, const uint8_t *restrict buf, size_t len)
 {
+	size_t t = ctx->bytes[0] & 0x3F; /* Bytes already in ctx->in */
 	/* Update bitcount */
-
-	uint32_t t = ctx->bits[0];
-	if ((ctx->bits[0] = t + ((uint32_t)len << 3)) < t) {
-		ctx->bits[1]++;		/* Carry from low to high */
+	ctx->bytes[0] += len;
+	if (ctx->bytes[0] < len) {
+		++(ctx->bytes[1]); /* Carry from low to high */
 	}
-	ctx->bits[1] += len >> 29;
-
-	t = (t >> 3) & 0x3f;	/* Bytes already in shsInfo->data */
 
 	/* Handle any leading odd-sized chunks */
 
 	if (t) {
 		uint8_t *const p = ctx->in + t;
-
 		t = 64 - t;
 		if (len < t) {
 			memcpy(p, buf, len);
@@ -90,7 +86,6 @@ void MD5Update(struct MD5Context *ctx, const uint8_t *restrict buf, size_t len)
 		len -= t;
 	}
 	/* Process data in 64-byte chunks */
-
 	while (len >= 64) {
 		memcpy(ctx->in, buf, 64);
 		byteReverse(ctx->in, 16);
@@ -98,9 +93,7 @@ void MD5Update(struct MD5Context *ctx, const uint8_t *restrict buf, size_t len)
 		buf += 64;
 		len -= 64;
 	}
-
 	/* Handle any remaining bytes of data. */
-
 	memcpy(ctx->in, buf, len);
 }
 
@@ -111,7 +104,7 @@ void MD5Update(struct MD5Context *ctx, const uint8_t *restrict buf, size_t len)
 void MD5Final(uint8_t digest[16], struct MD5Context *ctx)
 {
 	/* Compute number of bytes mod 64 */
-	size_t count = (ctx->bits[0] >> 3) & 0x3F;
+	size_t count = ctx->bytes[0] & 0x3F;
 
 	/* Set the first char of padding to 0x80.  This is safe since there is
 		always at least one byte free */
@@ -137,8 +130,8 @@ void MD5Final(uint8_t digest[16], struct MD5Context *ctx)
 	byteReverse(ctx->in, 14);
 
 	/* Append length in bits and transform */
-	((uint32_t *)ctx->in)[14] = ctx->bits[0];
-	((uint32_t *)ctx->in)[15] = ctx->bits[1];
+	((uint32_t *)ctx->in)[14] = (ctx->bytes[0] << 3);
+	((uint32_t *)ctx->in)[15] = (ctx->bytes[1] << 3) | (ctx->bytes[0] >> 29);
 
 	MD5Transform(ctx->buf, (uint32_t *)ctx->in);
 	byteReverse((uint8_t *)ctx->buf, 4);
@@ -165,14 +158,12 @@ void MD5Final(uint8_t digest[16], struct MD5Context *ctx)
  * reflect the addition of 16 longwords of new data.  MD5Update blocks
  * the data and converts bytes into longwords for this routine.
  */
-static void MD5Transform(uint32_t buf[4], uint32_t const in[16])
+static inline void MD5Transform(uint32_t buf[restrict 4], uint32_t const in[restrict 16])
 {
-    register uint32_t a, b, c, d;
-
-    a = buf[0];
-    b = buf[1];
-    c = buf[2];
-    d = buf[3];
+    uint32_t a = buf[0];
+    uint32_t b = buf[1];
+    uint32_t c = buf[2];
+    uint32_t d = buf[3];
 
     MD5STEP(F1, a, b, c, d, in[0] + 0xd76aa478, 7);
     MD5STEP(F1, d, a, b, c, in[1] + 0xe8c7b756, 12);

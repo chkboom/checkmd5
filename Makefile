@@ -1,5 +1,5 @@
-CFLAGS += -std=c11 -Wall -D_DEFAULT_SOURCE -D_FILE_OFFSET_BITS=64 -DI18N -fPIC -flto -O3
-LFLAGS += -Wall -fPIC -flto -O3
+CFLAGS += -std=c17 -Wall -D_DEFAULT_SOURCE -D_FILE_OFFSET_BITS=64 -DI18N -fpie -flto -Ofast
+LFLAGS += -Wall -pie -flto -Ofast
 
 all: checkmd5 i18n_mo
 	strip checkmd5
