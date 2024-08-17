@@ -244,16 +244,13 @@ static struct CheckTarget **getTargets(size_t *restrict pntargets, const char **
 			memcpy(target->hash, line, HASH_HEX_SIZE);
 			memcpy(target->path, line+endspace, len);
 			// Obtain file size
-			int fd = open(target->path, O_RDONLY);
-			if (fd == -1) error = TR("Cannot open");
-			else {
-				struct stat sb;
-				if (!error && fstat(fd, &sb)!=0) error = TR("Cannot stat");
-				target->size = sb.st_size;
-				target->blksize = sb.st_blksize;
-				close(fd);
+			struct stat sb;
+			if (stat(target->path, &sb)!=0) {
+				error = TR("Cannot stat");
+				break;
 			}
-			if(error) break;
+			target->size = sb.st_size;
+			target->blksize = sb.st_blksize;
 		}
 		fclose(sumfile);
 		if(error) {
@@ -282,16 +279,16 @@ static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool force, b
 	int rc = 0;
 	// Calculate total size
 	unsigned long long nbtotal = 0;
-	const size_t pagesize = (size_t)sysconf(_SC_PAGESIZE);
-	size_t bufsize = pagesize;
+	size_t bufsize = 0;
 	for(size_t i = 0; i < ntargets; ++i) {
 		struct CheckTarget *restrict target = targets[i];
 		nbtotal += target->size;
-		target->blksize = ((target->blksize + (pagesize - 1)) / pagesize) * pagesize;
 		if(bufsize < target->blksize) {
 			bufsize = target->blksize;
 		}
 	}
+	const size_t pagesize = (size_t)sysconf(_SC_PAGESIZE);
+	bufsize = ((bufsize + (pagesize - 1)) / pagesize) * pagesize;
 	unsigned char *buffer = aligned_alloc(pagesize, bufsize);
 	if(!buffer) {
 		logprint(true, "ERROR: %s\n", strerror(errno));
@@ -323,7 +320,8 @@ static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool force, b
 			printf(checkfmt, checkmsg, 0.0);
 			fflush(stdout);
 		}
-		for(off_t remain=target->size; remain>0;) {
+		errno = 0;
+		for(off_t remain=target->size; remain>0 && !errno;) {
 			const ssize_t nread = read(targetfd, buffer, target->blksize);
 			MD5Update(&md5ctx, buffer, nread);
 			remain -= nread;
