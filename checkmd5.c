@@ -18,6 +18,9 @@
 ** limitations under the License.
 */
 
+#define _FILE_OFFSET_BITS 64
+#define _DEFAULT_SOURCE
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,12 +42,11 @@
 #else
 	#define TR(S)
 #endif // !I18N
+
 #include "md5.h"
 #include "version.h"
 
-#define BUFFER_BLOCKS 32
 #define HASH_SIZE 16 // MD5 hash
-
 #define HASH_HEX_SIZE (2*HASH_SIZE)
 
 enum ExitValues {
@@ -280,14 +282,17 @@ static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool force, b
 	int rc = 0;
 	// Calculate total size
 	unsigned long long nbtotal = 0;
-	size_t bufsize = 0;
+	const size_t pagesize = (size_t)sysconf(_SC_PAGESIZE);
+	size_t bufsize = pagesize;
 	for(size_t i = 0; i < ntargets; ++i) {
 		struct CheckTarget *restrict target = targets[i];
 		nbtotal += target->size;
-		if(bufsize < target->blksize) bufsize = target->blksize;
+		target->blksize = ((target->blksize + (pagesize - 1)) / pagesize) * pagesize;
+		if(bufsize < target->blksize) {
+			bufsize = target->blksize;
+		}
 	}
-	bufsize *= BUFFER_BLOCKS;
-	unsigned char *buffer = aligned_alloc((size_t)sysconf(_SC_PAGESIZE), bufsize);
+	unsigned char *buffer = aligned_alloc(pagesize, bufsize);
 	if(!buffer) {
 		logprint(true, "ERROR: %s\n", strerror(errno));
 		rc = EXIT_SYSTEM; goto END;
@@ -308,6 +313,7 @@ static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool force, b
 			nbproc += target->size;
 			continue;
 		}
+		posix_fadvise(targetfd, 0, 0, POSIX_FADV_SEQUENTIAL);
 
 		unsigned int oldprog = 1001;
 		struct MD5Context md5ctx;
@@ -318,7 +324,7 @@ static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool force, b
 			fflush(stdout);
 		}
 		for(off_t remain=target->size; remain>0;) {
-			const ssize_t nread = read(targetfd, buffer, bufsize);
+			const ssize_t nread = read(targetfd, buffer, target->blksize);
 			MD5Update(&md5ctx, buffer, nread);
 			remain -= nread;
 			nbproc += nread;
