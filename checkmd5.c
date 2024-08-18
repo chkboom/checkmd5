@@ -29,6 +29,7 @@
 #include <limits.h>
 #include <errno.h>
 #include <time.h>
+#include <poll.h>
 #include <unistd.h>
 #include <signal.h>
 #include <fcntl.h>
@@ -65,6 +66,7 @@ struct CheckTarget {
 };
 static struct CheckTarget **getTargets(size_t *restrict pchkcount, const char **sumfiles, int nsumfiles);
 static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool force, bool gauge, bool verbose);
+static int progUI(const char *text, unsigned int prog, bool gauge, bool verbose);
 
 static int g_signal = 0;
 static void sighandler(int sigraised);
@@ -298,6 +300,7 @@ static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool force, b
 	// Check each file
 	size_t npassed=0;
 	unsigned long long nbproc=0, nbpassed=0;
+	unsigned int oldprog = 0;
 	const char *checkmsg = TR("Checking");
 	for(size_t ixtarget = 0; ixtarget < ntargets; ++ixtarget) {
 		struct CheckTarget *target = targets[ixtarget];
@@ -312,14 +315,9 @@ static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool force, b
 		}
 		posix_fadvise(targetfd, 0, 0, POSIX_FADV_SEQUENTIAL);
 
-		unsigned int oldprog = 1001;
+		progUI(checkmsg, oldprog, gauge, verbose);
 		struct MD5Context md5ctx;
 		MD5Init(&md5ctx);
-		static const char *checkfmt = "\r%s: %.1F%%";
-		if(!gauge) {
-			printf(checkfmt, checkmsg, 0.0);
-			fflush(stdout);
-		}
 		errno = 0;
 		for(off_t remain=target->size; remain>0 && !errno;) {
 			const ssize_t nread = read(targetfd, buffer, target->blksize);
@@ -330,28 +328,15 @@ static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool force, b
 			// Progress indication and user cancel request handling.
 			const unsigned int prog = (1000*nbproc) / nbtotal;
 			if(prog != oldprog) {
-				int rp = 0;
-				if(!gauge) rp = printf(checkfmt, checkmsg, (float)prog/10.0);
-				else if ((prog%10)==0) rp = printf("%u\n", prog/10);
-				if(rp>0) fflush(stdout);
-
 				oldprog = prog;
-
-				// Check if the user has requested an early exit.
-				fd_set fds;
-				FD_ZERO(&fds);
-				FD_SET(0, &fds);
-				if(g_signal || (select(1, &fds, NULL, NULL, &(struct timeval){0}) && getchar() == 27)) {
-					putchar('\n');
-					logprint(verbose, "Aborted: %.1F%% ", (float)prog/10.0);
-					if(!g_signal) logprint(verbose, "(ESC)\n");
-					else logprint(verbose, "(signal %d)\n", g_signal);
-					rc = EXIT_ABORTED; goto END;
-				}
+				rc = progUI(checkmsg, prog, gauge, verbose);
+				if(rc) goto END;
 			}
 		}
 		close(targetfd);
-		if(verbose) putchar('\n');
+		if(verbose && !gauge) {
+			putchar('\n'); // Break progress indicator line for the next line of printed log.
+		}
 
 		unsigned char digest[HASH_SIZE];
 		MD5Final(digest, &md5ctx);
@@ -365,7 +350,6 @@ static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool force, b
 		if(result==0) {
 			++npassed;
 			nbpassed += target->size;
-			if(!verbose && nbproc==nbtotal) putchar('\n');
 		} else {
 			if(!verbose) putchar('\n');
 			printf("%s: %s\n", TR("Checksum mismatch"), target->path);
@@ -373,10 +357,39 @@ static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool force, b
 			if(!force) goto END;
 		}
 	}
+	if(!verbose && !gauge) {
+		putchar('\n'); // Break progress indicator line for the next line of printed log.
+	}
 	logprint(verbose, "Result: %zu/%zu targets (%llu/%llu bytes) passed\n",
 		npassed, ntargets, nbpassed, nbtotal);
 
  END:
 	if(buffer) free(buffer);
 	return rc;
+}
+
+static int progUI(const char *text, unsigned int prog, bool gauge, bool verbose)
+{
+	struct pollfd pfds[] = {
+		{ .fd = STDOUT_FILENO, .events = POLLOUT },
+		{ .fd = STDIN_FILENO, .events = POLLIN }
+	};
+	if(poll(pfds, 2, 0) > 0 || g_signal) {
+		// Write progress to the output terminal if ready.
+		if(pfds[0].revents & POLLOUT) {
+			int rp = 0;
+			if(!gauge) rp = printf("\r%s: %.1F%%", text, (float)prog/10.0);
+			else if((prog%10)==0) rp = printf("%u\n", prog/10);
+			if(rp>0) fflush(stdout);
+		}
+		// Check if the user has requested an early exit.
+		if(((pfds[1].revents & (POLLIN | POLLERR | POLLHUP)) && getchar() == 27) || g_signal) {
+			if(!gauge) putchar('\n');
+			logprint(verbose, "Aborted: %.1F%% ", (float)prog/10.0);
+			if(!g_signal) logprint(verbose, "(ESC)\n");
+			else logprint(verbose, "(signal %d)\n", g_signal);
+			return EXIT_ABORTED;
+		}
+	}
+	return 0;
 }
