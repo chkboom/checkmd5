@@ -65,8 +65,8 @@ struct CheckTarget {
 	char path[];
 };
 static struct CheckTarget **getTargets(size_t *restrict pchkcount, const char **sumfiles, int nsumfiles);
-static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool force, bool gauge, bool verbose);
-static int progUI(const char *text, unsigned int prog, bool gauge, bool verbose);
+static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool force, bool perclines, bool verbose);
+static int progUI(const char *text, unsigned int prog, bool perclines, bool verbose);
 
 static int g_signal = 0;
 static void sighandler(int sigraised);
@@ -97,11 +97,11 @@ int main(int argc, const char **argv)
 	#endif
 
 	++argv; --argc;
-	bool force=false, gauge=false, verbose=false;
+	bool force=false, perclines=false, verbose=false;
 	while(argc>0 && (*argv)[0]=='-') {
 		const char *arg = argv[0];
 		if(!strcmp(arg, "--force")) force = true;
-		else if(!strcmp(arg, "--gauge")) gauge = true;
+		else if(!strcmp(arg, "--percent-lines")) perclines = true;
 		else if(!strcmp(arg, "--verbose")) verbose = true;
 		else if(!strncmp(arg, "--log=", 6) && arg[6]!='\0') {
 			const char *lfname = arg+6;
@@ -119,7 +119,7 @@ int main(int argc, const char **argv)
 	}
 	if(argc<1) {
 		fprintf(stderr, "checkMD5 - Version " VERSION "\nUsage: checkmd5 [--force]"
-			" [--verbose] [--log=<logfile>] [--gauge] [--] <checksum-file> ...\n");
+			" [--verbose] [--log=<logfile>] [--percent-lines] [--] <checksum-file> ...\n");
 		return EXIT_SYSTEM;
 	}
 
@@ -162,7 +162,7 @@ int main(int argc, const char **argv)
 	tio.c_lflag &= ~(ICANON | ECHO);
 	tcsetattr(0, TCSANOW, &tio);
 
-	rc = checkmd5(targets, ntargets, force, gauge, verbose);
+	rc = checkmd5(targets, ntargets, force, perclines, verbose);
 
 	switch(rc){
 		case EXIT_OK: puts(TR("The integrity check has passed.")); break;
@@ -276,7 +276,7 @@ ERROR:
 	return NULL;
 }
 
-static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool force, bool gauge, bool verbose)
+static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool force, bool perclines, bool verbose)
 {
 	int rc = 0;
 	// Calculate total size
@@ -315,7 +315,7 @@ static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool force, b
 		}
 		posix_fadvise(targetfd, 0, 0, POSIX_FADV_SEQUENTIAL);
 
-		progUI(checkmsg, oldprog, gauge, verbose);
+		progUI(checkmsg, oldprog, perclines, verbose);
 		struct MD5Context md5ctx;
 		MD5Init(&md5ctx);
 		errno = 0;
@@ -329,12 +329,12 @@ static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool force, b
 			const unsigned int prog = (1000*nbproc) / nbtotal;
 			if(prog != oldprog) {
 				oldprog = prog;
-				rc = progUI(checkmsg, prog, gauge, verbose);
+				rc = progUI(checkmsg, prog, perclines, verbose);
 				if(rc) goto END;
 			}
 		}
 		close(targetfd);
-		if(verbose && !gauge) {
+		if(verbose && !perclines) {
 			putchar('\n'); // Break progress indicator line for the next line of printed log.
 		}
 
@@ -357,7 +357,7 @@ static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool force, b
 			if(!force) goto END;
 		}
 	}
-	if(!verbose && !gauge) {
+	if(!verbose && !perclines) {
 		putchar('\n'); // Break progress indicator line for the next line of printed log.
 	}
 	logprint(verbose, "Result: %zu/%zu targets (%llu/%llu bytes) passed\n",
@@ -368,7 +368,7 @@ static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool force, b
 	return rc;
 }
 
-static int progUI(const char *text, unsigned int prog, bool gauge, bool verbose)
+static int progUI(const char *text, unsigned int prog, bool perclines, bool verbose)
 {
 	struct pollfd pfds[] = {
 		{ .fd = STDOUT_FILENO, .events = POLLOUT },
@@ -377,14 +377,16 @@ static int progUI(const char *text, unsigned int prog, bool gauge, bool verbose)
 	if(poll(pfds, 2, 0) > 0 || g_signal) {
 		// Write progress to the output terminal if ready.
 		if(pfds[0].revents & POLLOUT) {
-			int rp = 0;
-			if(!gauge) rp = printf("\r%s: %.1F%%", text, (float)prog/10.0);
-			else if((prog%10)==0) rp = printf("%u\n", prog/10);
-			if(rp>0) fflush(stdout);
+			if(!perclines) {
+				printf("\r%s: %.1F%%", text, (float)prog/10.0);
+			} else {
+				printf("%.1F%%\n", (float)prog/10.0);
+			}
+			fflush(stdout);
 		}
 		// Check if the user has requested an early exit.
 		if(((pfds[1].revents & (POLLIN | POLLERR | POLLHUP)) && getchar() == 27) || g_signal) {
-			if(!gauge) putchar('\n');
+			if(!perclines) putchar('\n');
 			logprint(verbose, "Aborted: %.1F%% ", (float)prog/10.0);
 			if(!g_signal) logprint(verbose, "(ESC)\n");
 			else logprint(verbose, "(signal %d)\n", g_signal);
