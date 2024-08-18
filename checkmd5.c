@@ -374,7 +374,8 @@ static int progUI(const char *text, unsigned int prog, bool perclines, bool verb
 		{ .fd = STDOUT_FILENO, .events = POLLOUT },
 		{ .fd = STDIN_FILENO, .events = POLLIN }
 	};
-	if(poll(pfds, 2, 0) > 0 || g_signal) {
+	errno = 0;
+	if(poll(pfds, 2, 0) > 0) {
 		// Write progress to the output terminal if ready.
 		if(pfds[0].revents & POLLOUT) {
 			if(!perclines) {
@@ -384,14 +385,23 @@ static int progUI(const char *text, unsigned int prog, bool perclines, bool verb
 			}
 			fflush(stdout);
 		}
-		// Check if the user has requested an early exit.
-		if(((pfds[1].revents & (POLLIN | POLLERR | POLLHUP)) && getchar() == 27) || g_signal) {
-			if(!perclines) putchar('\n');
-			logprint(verbose, "Aborted: %.1F%% ", (float)prog/10.0);
-			if(!g_signal) logprint(verbose, "(ESC)\n");
-			else logprint(verbose, "(signal %d)\n", g_signal);
-			return EXIT_ABORTED;
+		// Early exit trigger.
+		if((pfds[1].revents & POLLIN) && getchar() == 27) {
+			errno = ECANCELED; // User requested an early exit using ESC.
 		}
+		if((pfds[0].revents | pfds[1].revents) & (POLLERR | POLLHUP)) {
+			errno = ESTRPIPE; // Stream pipe error.
+		}
+	} else if(errno == EAGAIN || errno == EINTR) {
+		errno = 0; // Try again next time.
+	}
+
+	if(errno || g_signal) {
+		if(!perclines) putchar('\n');
+		logprint(verbose, "Aborted: %.1F%% ", (float)prog/10.0);
+		if(errno) logprint(verbose, "(%s)\n", strerror(errno));
+		else logprint(verbose, "(signal %d)\n", g_signal);
+		return EXIT_ABORTED;
 	}
 	return 0;
 }
