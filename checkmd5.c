@@ -99,12 +99,13 @@ int main(int argc, const char **argv)
 	#endif
 
 	++argv; --argc;
-	bool force=false, perclines=false, verbose=false;
+	bool force=false, perclines=false, verbose=false, machine=false;
 	while(argc>0 && (*argv)[0]=='-') {
 		const char *restrict arg = argv[0];
 		if(!strcmp(arg, "--force")) force = true;
 		else if(!strcmp(arg, "--percent-lines")) perclines = true;
 		else if(!strcmp(arg, "--verbose")) verbose = true;
+		else if(!strcmp(arg, "--machine")) machine = perclines = true;
 		else if(!strncmp(arg, "--log=", 6) && arg[6]!='\0') {
 			const char *restrict lfname = arg+6;
 			g_logfile = fopen(lfname, "w");
@@ -121,12 +122,9 @@ int main(int argc, const char **argv)
 	}
 	if(argc<1) {
 		fprintf(stderr, "checkMD5 - Version " VERSION "\nUsage: checkmd5 [--force]"
-			" [--verbose] [--log=<logfile>] [--percent-lines] [--] <checksum-file> ...\n");
+			" [--verbose] [--log=<logfile>] [--machine|--percent-lines] [--] <checksum-file> ...\n");
 		return EXIT_SYSTEM;
 	}
-
-	// For consistent progress indication even if stdout is redirected.
-	setvbuf(stdout, NULL, (perclines ? _IOLBF : _IONBF), 0);
 
 	// Log the start time and all of the list file names on the command line.
 	const time_t tnow = time(NULL);
@@ -160,23 +158,29 @@ int main(int argc, const char **argv)
 	sigaction(SIGUSR1, &sa, NULL);
 	sigaction(SIGUSR2, &sa, NULL);
 
-	puts(TR("Press [Esc] to abort the integrity check."));
-	struct termios tio;
-	tcgetattr(0, &tio);
-	const tcflag_t oldlflag = tio.c_lflag;
-	tio.c_lflag &= ~(ICANON | ECHO);
-	tcsetattr(0, TCSANOW, &tio);
+	if(machine) {
+		setvbuf(stdout, NULL, _IOLBF, 0); // Eliminate delays caused by piping changing buffer mode.
+		rc = checkmd5(targets, ntargets, force, true, verbose);
+	} else {
+		setvbuf(stdout, NULL, _IONBF, 0); // No line buffering, progress indicator may reuse the line.
+		puts(TR("Press [Esc] to abort the integrity check."));
+		struct termios tio;
+		tcgetattr(0, &tio);
+		const tcflag_t oldlflag = tio.c_lflag;
+		tio.c_lflag &= ~(ICANON | ECHO);
+		tcsetattr(0, TCSANOW, &tio);
 
-	rc = checkmd5(targets, ntargets, force, perclines, verbose);
+		rc = checkmd5(targets, ntargets, force, perclines, verbose);
 
-	switch(rc){
-		case EXIT_OK: puts(TR("The integrity check has passed.")); break;
-		case EXIT_BADCHECK: puts(TR("The integrity check has failed.")); break;
-		case EXIT_ABORTED: puts(TR("The integrity check was aborted.")); break;
-		default: puts(TR("The integrity check could not be completed.")); break;
+		switch(rc){
+			case EXIT_OK: puts(TR("The integrity check has passed.")); break;
+			case EXIT_BADCHECK: puts(TR("The integrity check has failed.")); break;
+			case EXIT_ABORTED: puts(TR("The integrity check was aborted.")); break;
+			default: puts(TR("The integrity check could not be completed.")); break;
+		}
+		tio.c_lflag = oldlflag;
+		tcsetattr(0, TCSANOW, &tio);
 	}
-	tio.c_lflag = oldlflag;
-	tcsetattr(0, TCSANOW, &tio);
 
  END:
 	logprint(false, "Exit: %d\n", rc);
