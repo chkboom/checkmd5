@@ -67,8 +67,8 @@ struct CheckTarget {
 static struct CheckTarget **getTargets(size_t *restrict pchkcount,
 	const char **restrict sumfiles, int nsumfiles);
 static int checkmd5(struct CheckTarget **restrict targets, size_t ntargets,
-	bool force, bool perclines, bool verbose);
-static int progUI(const char *restrict text, unsigned int prog, bool perclines, bool verbose);
+	bool force, bool machine, bool verbose);
+static int progUI(const char *restrict text, unsigned int prog, bool machine, bool verbose);
 
 static int g_signal = 0;
 static void sighandler(int sigraised);
@@ -99,13 +99,12 @@ int main(int argc, const char **argv)
 	#endif
 
 	++argv; --argc;
-	bool force=false, perclines=false, verbose=false, machine=false;
+	bool force=false, verbose=false, machine=false;
 	while(argc>0 && (*argv)[0]=='-') {
 		const char *restrict arg = argv[0];
 		if(!strcmp(arg, "--force")) force = true;
-		else if(!strcmp(arg, "--percent-lines")) perclines = true;
 		else if(!strcmp(arg, "--verbose")) verbose = true;
-		else if(!strcmp(arg, "--machine")) machine = perclines = true;
+		else if(!strcmp(arg, "--machine")) machine = true;
 		else if(!strncmp(arg, "--log=", 6) && arg[6]!='\0') {
 			const char *restrict lfname = arg+6;
 			g_logfile = fopen(lfname, "w");
@@ -122,7 +121,7 @@ int main(int argc, const char **argv)
 	}
 	if(argc<1) {
 		fprintf(stderr, "checkMD5 - Version " VERSION "\nUsage: checkmd5 [--force]"
-			" [--verbose] [--log=<logfile>] [--machine|--percent-lines] [--] <checksum-file> ...\n");
+			" [--verbose] [--log=<logfile>] [--machine] [--] <checksum-file> ...\n");
 		return EXIT_SYSTEM;
 	}
 
@@ -170,7 +169,7 @@ int main(int argc, const char **argv)
 		tio.c_lflag &= ~(ICANON | ECHO);
 		tcsetattr(0, TCSANOW, &tio);
 
-		rc = checkmd5(targets, ntargets, force, perclines, verbose);
+		rc = checkmd5(targets, ntargets, force, false, verbose);
 
 		switch(rc){
 			case EXIT_OK: puts(TR("The integrity check has passed.")); break;
@@ -287,7 +286,7 @@ ERROR:
 }
 
 static int checkmd5(struct CheckTarget **restrict targets, size_t ntargets,
-	bool force, bool perclines, bool verbose)
+	bool force, bool machine, bool verbose)
 {
 	int rc = 0;
 	long pagesize = sysconf(_SC_PAGESIZE);
@@ -330,7 +329,7 @@ static int checkmd5(struct CheckTarget **restrict targets, size_t ntargets,
 		}
 		posix_fadvise(targetfd, 0, 0, POSIX_FADV_SEQUENTIAL);
 
-		progUI(checkmsg, oldprog, perclines, verbose);
+		progUI(checkmsg, oldprog, machine, verbose);
 		struct MD5Context md5ctx;
 		MD5Init(&md5ctx);
 		errno = 0;
@@ -344,12 +343,12 @@ static int checkmd5(struct CheckTarget **restrict targets, size_t ntargets,
 			const unsigned int prog = (1000*nbproc) / nbtotal;
 			if(prog != oldprog) {
 				oldprog = prog;
-				rc = progUI(checkmsg, prog, perclines, verbose);
+				rc = progUI(checkmsg, prog, machine, verbose);
 				if(rc) goto END;
 			}
 		}
 		close(targetfd);
-		if(verbose && !perclines) {
+		if(verbose && !machine) {
 			putchar('\n'); // Break progress indicator line for the next line of printed log.
 		}
 
@@ -372,7 +371,7 @@ static int checkmd5(struct CheckTarget **restrict targets, size_t ntargets,
 			if(!force) goto END;
 		}
 	}
-	if(!verbose && !perclines) {
+	if(!verbose && !machine) {
 		putchar('\n'); // Break progress indicator line for the next line of printed log.
 	}
 	logprint(verbose, "Result: %zu/%zu targets (%llu/%llu bytes) passed\n",
@@ -383,7 +382,7 @@ static int checkmd5(struct CheckTarget **restrict targets, size_t ntargets,
 	return rc;
 }
 
-static int progUI(const char *restrict text, unsigned int prog, bool perclines, bool verbose)
+static int progUI(const char *restrict text, unsigned int prog, bool machine, bool verbose)
 {
 	struct pollfd pfds[] = {
 		{ .fd = STDOUT_FILENO, .events = POLLOUT },
@@ -393,10 +392,10 @@ static int progUI(const char *restrict text, unsigned int prog, bool perclines, 
 	if(poll(pfds, 2, 0) > 0) {
 		// Write progress to the output terminal if ready.
 		if(pfds[0].revents & POLLOUT) {
-			if(!perclines) {
-				printf("\r%s: %.1F%%", text, (float)prog/10.0);
-			} else {
+			if(machine) {
 				printf("%.1F%%\n", (float)prog/10.0);
+			} else {
+				printf("\r%s: %.1F%%", text, (float)prog/10.0);
 			}
 		}
 		// Early exit trigger.
@@ -411,7 +410,7 @@ static int progUI(const char *restrict text, unsigned int prog, bool perclines, 
 	}
 
 	if(errno || g_signal) {
-		if(!perclines) putchar('\n');
+		if(!machine) putchar('\n');
 		logprint(verbose, "Aborted: %.1F%% ", (float)prog/10.0);
 		if(errno) logprint(verbose, "(%s)\n", strerror(errno));
 		else logprint(verbose, "(signal %d)\n", g_signal);
