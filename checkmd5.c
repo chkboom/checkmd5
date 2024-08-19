@@ -125,6 +125,9 @@ int main(int argc, const char **argv)
 		return EXIT_SYSTEM;
 	}
 
+	// For consistent progress indication even if stdout is redirected.
+	setvbuf(stdout, NULL, (perclines ? _IOLBF : _IONBF), 0);
+
 	// Log the start time and all of the list file names on the command line.
 	const time_t tnow = time(NULL);
 	logprint(false, "Start: %sLists:", ctime(&tnow));
@@ -391,7 +394,6 @@ static int progUI(const char *restrict text, unsigned int prog, bool perclines, 
 			} else {
 				printf("%.1F%%\n", (float)prog/10.0);
 			}
-			fflush(stdout);
 		}
 		// Early exit trigger.
 		if((pfds[1].revents & POLLIN) && getchar() == 27) {
