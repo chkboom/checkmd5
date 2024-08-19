@@ -64,15 +64,17 @@ struct CheckTarget {
 	char hash[HASH_HEX_SIZE];
 	char path[];
 };
-static struct CheckTarget **getTargets(size_t *restrict pchkcount, const char **sumfiles, int nsumfiles);
-static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool force, bool perclines, bool verbose);
-static int progUI(const char *text, unsigned int prog, bool perclines, bool verbose);
+static struct CheckTarget **getTargets(size_t *restrict pchkcount,
+	const char **restrict sumfiles, int nsumfiles);
+static int checkmd5(struct CheckTarget **restrict targets, size_t ntargets,
+	bool force, bool perclines, bool verbose);
+static int progUI(const char *restrict text, unsigned int prog, bool perclines, bool verbose);
 
 static int g_signal = 0;
 static void sighandler(int sigraised);
 
 static FILE *g_logfile = NULL;
-static void logprint(bool console, const char *fmt, ...)
+static void logprint(bool console, const char *restrict fmt, ...)
 {
 	va_list ap;
 	if(g_logfile) {
@@ -99,12 +101,12 @@ int main(int argc, const char **argv)
 	++argv; --argc;
 	bool force=false, perclines=false, verbose=false;
 	while(argc>0 && (*argv)[0]=='-') {
-		const char *arg = argv[0];
+		const char *restrict arg = argv[0];
 		if(!strcmp(arg, "--force")) force = true;
 		else if(!strcmp(arg, "--percent-lines")) perclines = true;
 		else if(!strcmp(arg, "--verbose")) verbose = true;
 		else if(!strncmp(arg, "--log=", 6) && arg[6]!='\0') {
-			const char *lfname = arg+6;
+			const char *restrict lfname = arg+6;
 			g_logfile = fopen(lfname, "w");
 			if(!g_logfile) {
 				fprintf(stderr, "ERROR: %s: %s\n", strerror(errno), lfname);
@@ -133,7 +135,7 @@ int main(int argc, const char **argv)
 
 	int rc = 0;
 	size_t ntargets = 0;
-	struct CheckTarget **targets = getTargets(&ntargets, argv, argc);
+	struct CheckTarget **restrict targets = getTargets(&ntargets, argv, argc);
 	if(!targets) {
 		rc = EXIT_BADLIST;
 		goto END;
@@ -184,13 +186,14 @@ static void sighandler(int sigraised)
 	g_signal = sigraised;
 }
 
-static struct CheckTarget **getTargets(size_t *restrict pntargets, const char **sumfiles, int nsumfiles)
+static struct CheckTarget **getTargets(size_t *restrict pntargets,
+	const char **restrict sumfiles, int nsumfiles)
 {
 	struct CheckTarget **targets = NULL;
 	size_t ntargets = 0;
 	for(int i = 0; i < nsumfiles; ++i) {
-		const char *filename = sumfiles[i];
-		FILE *sumfile = fopen(filename, "r");
+		const char *restrict filename = sumfiles[i];
+		FILE *restrict sumfile = fopen(filename, "r");
 		if(!sumfile) {
 			logprint(true, "ERROR: %s: %s\n", strerror(errno), filename);
 			goto ERROR;
@@ -198,7 +201,7 @@ static struct CheckTarget **getTargets(size_t *restrict pntargets, const char **
 
 		char line[HASH_HEX_SIZE+16+PATH_MAX]; // md5 + spaces + path
 		int nline = 0;
-		const char *error = NULL;
+		const char *restrict error = NULL;
 		errno = 0;
 		while(fgets(line, sizeof(line), sumfile)) {
 			++nline;
@@ -276,7 +279,8 @@ ERROR:
 	return NULL;
 }
 
-static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool force, bool perclines, bool verbose)
+static int checkmd5(struct CheckTarget **restrict targets, size_t ntargets,
+	bool force, bool perclines, bool verbose)
 {
 	int rc = 0;
 	long pagesize = sysconf(_SC_PAGESIZE);
@@ -305,9 +309,9 @@ static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool force, b
 	size_t npassed=0;
 	unsigned long long nbproc=0, nbpassed=0;
 	unsigned int oldprog = 0;
-	const char *checkmsg = TR("Checking");
+	const char *restrict checkmsg = TR("Checking");
 	for(size_t ixtarget = 0; ixtarget < ntargets; ++ixtarget) {
-		struct CheckTarget *target = targets[ixtarget];
+		const struct CheckTarget *restrict target = targets[ixtarget];
 		logprint(verbose, "Target: %.*s %s\n", HASH_HEX_SIZE,target->hash, target->path);
 		int targetfd = open(target->path, O_RDONLY);
 		if (targetfd < 0) {
@@ -372,7 +376,7 @@ static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool force, b
 	return rc;
 }
 
-static int progUI(const char *text, unsigned int prog, bool perclines, bool verbose)
+static int progUI(const char *restrict text, unsigned int prog, bool perclines, bool verbose)
 {
 	struct pollfd pfds[] = {
 		{ .fd = STDOUT_FILENO, .events = POLLOUT },
