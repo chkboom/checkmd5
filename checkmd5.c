@@ -279,19 +279,23 @@ ERROR:
 static int checkmd5(struct CheckTarget **targets, size_t ntargets, bool force, bool perclines, bool verbose)
 {
 	int rc = 0;
+	long pagesize = sysconf(_SC_PAGESIZE);
+	if (pagesize < 0) {
+		pagesize = 64; // Default to optimum block size for MD5 processing.
+	}
 	// Calculate total size
 	unsigned long long nbtotal = 0;
 	size_t bufsize = 0;
 	for(size_t i = 0; i < ntargets; ++i) {
 		struct CheckTarget *restrict target = targets[i];
 		nbtotal += target->size;
-		if(bufsize < target->blksize) {
-			bufsize = target->blksize;
+		const blksize_t ablksize = ((target->blksize + (pagesize - 1)) / pagesize) * pagesize;
+		if(bufsize < ablksize) {
+			bufsize = ablksize;
 		}
+		target->blksize = ablksize;
 	}
-	const size_t pagesize = (size_t)sysconf(_SC_PAGESIZE);
-	bufsize = ((bufsize + (pagesize - 1)) / pagesize) * pagesize;
-	unsigned char *buffer = aligned_alloc(pagesize, bufsize);
+	unsigned char *buffer = aligned_alloc((size_t)pagesize, bufsize);
 	if(!buffer) {
 		logprint(true, "ERROR: %s\n", strerror(errno));
 		rc = EXIT_SYSTEM; goto END;
