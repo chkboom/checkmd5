@@ -1,0 +1,12 @@
+Source: checkmd5
+Section: admin
+Priority: optional
+Maintainer: Adrian <adrian@mxlinux.org>
+Build-Depends: debhelper (>=10)
+Standards-Version: 3.9.8
+Vcs-Git: git://github.com/chkboom/checkmd5
+
+Package: checkmd5
+Architecture: any
+Depends: ${misc:Depends}, ${shlibs:Depends}
+Description: Improved MD5 aggregate file checker
