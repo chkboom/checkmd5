@@ -68,7 +68,8 @@ static struct CheckTarget **getTargets(size_t *restrict pchkcount,
 	const char **restrict sumfiles, int nsumfiles);
 static int checkmd5(struct CheckTarget **restrict targets, size_t ntargets,
 	bool force, bool machine, bool verbose);
-static int progUI(const char *restrict text, unsigned int prog, bool machine, bool verbose);
+static int progUI(unsigned long long *restrict next,
+	unsigned long long processed, unsigned long long total, bool machine, bool verbose);
 
 static int g_signal = 0;
 static void sighandler(int sigraised);
@@ -313,9 +314,7 @@ static int checkmd5(struct CheckTarget **restrict targets, size_t ntargets,
 
 	// Check each file
 	size_t npassed=0;
-	unsigned long long nbproc=0, nbpassed=0;
-	unsigned int oldprog = 0;
-	const char *restrict checkmsg = TR("Checking");
+	unsigned long long nbproc=0, nbpassed=0, nbnext=0;
 	for(size_t ixtarget = 0; ixtarget < ntargets; ++ixtarget) {
 		const struct CheckTarget *restrict target = targets[ixtarget];
 		logprint(verbose, "Target: %.*s %s\n", HASH_HEX_SIZE,target->hash, target->path);
@@ -329,7 +328,7 @@ static int checkmd5(struct CheckTarget **restrict targets, size_t ntargets,
 		}
 		posix_fadvise(targetfd, 0, 0, POSIX_FADV_SEQUENTIAL);
 
-		progUI(checkmsg, oldprog, machine, verbose);
+		progUI(&nbnext, nbproc, nbtotal, machine, verbose);
 		struct MD5Context md5ctx;
 		MD5Init(&md5ctx);
 		errno = 0;
@@ -340,10 +339,8 @@ static int checkmd5(struct CheckTarget **restrict targets, size_t ntargets,
 			nbproc += nread;
 
 			// Progress indication and user cancel request handling.
-			const unsigned int prog = (1000*nbproc) / nbtotal;
-			if(prog != oldprog) {
-				oldprog = prog;
-				rc = progUI(checkmsg, prog, machine, verbose);
+			if(nbproc >= nbnext) {
+				rc = progUI(&nbnext, nbproc, nbtotal, machine, verbose);
 				if(rc) goto END;
 			}
 		}
@@ -382,20 +379,22 @@ static int checkmd5(struct CheckTarget **restrict targets, size_t ntargets,
 	return rc;
 }
 
-static int progUI(const char *restrict text, unsigned int prog, bool machine, bool verbose)
+static int progUI(unsigned long long *restrict next,
+	unsigned long long processed, unsigned long long total, bool machine, bool verbose)
 {
 	struct pollfd pfds[] = {
 		{ .fd = STDOUT_FILENO, .events = POLLOUT },
 		{ .fd = STDIN_FILENO, .events = POLLIN }
 	};
 	errno = 0;
+	const float percentage = (100.0 * (float)processed) / (float)total;
 	if(poll(pfds, 2, 0) > 0) {
 		// Write progress to the output terminal if ready.
 		if(pfds[0].revents & POLLOUT) {
 			if(machine) {
-				printf("%.1F%%\n", (float)prog/10.0);
+				printf("%.1F%%\n", percentage);
 			} else {
-				printf("\r%s: %.1F%%", text, (float)prog/10.0);
+				printf("\r%s: %.1F%%", TR("Checking"), percentage);
 			}
 		}
 		// Early exit trigger.
@@ -409,9 +408,12 @@ static int progUI(const char *restrict text, unsigned int prog, bool machine, bo
 		errno = 0; // Try again next time.
 	}
 
+	const long long nextdiv = (total / 1000);
+	*next = ((processed / nextdiv) + 1) * nextdiv;
+
 	if(errno || g_signal) {
 		if(!machine) putchar('\n');
-		logprint(verbose, "Aborted: %.1F%% ", (float)prog/10.0);
+		logprint(verbose, "Aborted: %.1F%% ", percentage);
 		if(errno) logprint(verbose, "(%s)\n", strerror(errno));
 		else logprint(verbose, "(signal %d)\n", g_signal);
 		return EXIT_ABORTED;
