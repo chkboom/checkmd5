@@ -121,7 +121,7 @@ int main(int argc, const char **argv)
 	}
 	if(argc<1) {
 		fprintf(stderr, "checkMD5 - Version " VERSION "\nUsage: checkmd5 [--force]"
-			" [--verbose] [--log=<logfile>] [--machine] [--] <checksum-file> ...\n");
+			" [--verbose] [--machine] [--log=file] [--] file [...]\n");
 		return EXIT_SYSTEM;
 	}
 

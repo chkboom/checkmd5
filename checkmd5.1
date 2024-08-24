@@ -1,0 +1,174 @@
+.Dd August 24, 2024
+.Dt CHECKMD5 1
+.Os
+.Sh NAME
+.Nm checkmd5
+.Nd verify files in lists using MD5 message digest
+.Sh SYNOPSIS
+.Nm
+.Op Fl \-force
+.Op Fl \-verbose
+.Op Fl \-machine
+.Op Fl log Ns = Ns Ar file
+.Op Fl \-
+.Ar file Op ...
+.Sh DESCRIPTION
+The
+.Nm
+utility reads the entries inside every list
+.Ar file
+and verifies that the listed hash matches the
+calculated hash of the file in that entry.
+.Pp
+.Nm
+provides progress indication and allows the user to cancel the check.
+It is designed as a boot-time media source file checker,
+however it can be run at any time.
+.br
+It can optionally save a log file, which contains information
+about the check process, which checks have passed or failed,
+and if (and how) the process was interrupted.
+.Sh COMMAND-LINE OPTIONS
+The options and arguments are as follows:
+.Bl -tag -width Ds
+.It Fl \-force
+Force continuing the checks even if one file fails.
+The overall result will not change
+.Pq see Sx EXIT STATUS Ns ,
+however this option is useful for determining
+which files are still intact out of the entire set.
+.It Fl \-verbose
+Print extra information (much of which would be logged) during the process.
+.It Fl \-machine
+Make the output as machine friendly as possible for automated processing.
+This eliminates some console preparation steps and messages.
+Progress is written as a percentage ("XX.X%") with no other text.
+Every progress update occupies its own line with nothing else sharing it.
+.It Fl \-log Ns = Ns Ar file
+Write information about the verification process to a log
+.Ar file .
+This is easy to parse, written in English and is not translated.
+.It Fl \-
+Denotes the end of flags.
+Use this if any list files start with "-".
+.It Ar file Op ...
+Each argument henceforth corresponds to a list file.
+See
+.Sx LIST FILE FORMAT
+for details.
+.br
+Note: checkmd5 considers the overall result as
+ALL files in ALL lists on the command line.
+.El
+.Sh EXIT STATUS
+The
+.Nm
+utility exits with one of the following values:
+.Pp
+.Bl -tag -width Ds -compact
+.It 0
+All files in all lists match their expected hashes.
+.It 1
+At least one file does not match its expected hash.
+.It 2
+The process was aborted before all files could be checked.
+.It 3
+At least one of the lists are either unreadable or badly formed,
+or points to a file that does not exist or is inaccessible.
+.It 4
+An operating system error occurred,
+for example exhaustion of memory or file descriptors.
+.El
+.Pp
+Non-zero values above are not final and may change in a future version.
+The only guarantee is that
+.Nm
+exits 0 on success, and non-zero on failure.
+.Sh LIST FILE FORMAT
+The list files are plain text files, with each line containing an MD5 hash,
+at least one whitespace, and the path to the file that corresponds to it.
+The files are checked in the order they appear in the list.
+.Pp
+An example of a valid list file:
+.Bd -literal -offset indent
+0123456789abcdeffedcba9876543210 file.test
+fedbca98765432100123456789abcdef test/file.txt
+ABCDEF0123456789FEDCBA9876543210 SPACE FILE.TXT
+.Ed
+.Pp
+These list files can be generated using
+.Xr md5sum 1
+or
+.Xr cksum 1
+or a similar tool, since
+.Nm
+does not generate these lists.
+.br
+Some tools generate entries with an asterisk ("*") before the file name,
+which will not work.
+Also, only the forward slash ("/") can be used as a directory separator.
+.Pp
+The hexadecimal digits that make up the hash are not case sensitive,
+however the file paths may be, depending on the underlying file system
+which the files reside upon.
+File paths may contain whitespace.
+.Sh DIFFERENCES FROM OTHER MD5 TOOLS
+.Nm
+was not designed to replace other MD5 utilities in all use cases,
+and each has their own merits.
+.Bl -tag -width -Ds
+.It Xr md5sum 1 No and Xr cksum 1
+These utilities both check files,
+however they offer no progress indication or escape key interruption.
+They can still be interrupted by normal means (eg. signals, break [Ctrl+C]).
+They can also create compatible list files, which is outside the scope of the
+.Nm
+utility.
+.It Xr checkisomd5 1
+Although this utility also contains progress indication and interruptability,
+.Xr checkisomd5 1
+works across the entire ISO medium rather than
+the image files comprising the product.
+It relies on an MD5 hash embedded in an unused section of
+an ISO9660 image using
+.Xr implantisomd5 1 .
+Although there is no built-in logging capability,
+it exits with 2 if aborted.
+.El
+.Pp
+The
+.Nm
+tool bridges the gap between the two,
+but is not a replacement in all usage cases.
+.Sh SEE ALSO
+.Xr checkisomd5 1 ,
+.Xr cksum 1 ,
+.Xr implantisomd5 1 ,
+.Xr md5sum 1
+.Sh HISTORY
+The
+.Nm
+utility was created for verification of media files at antiX Linux and MX Linux
+live systems at boot time, for its progress indication and a way for the user
+to interrupt the checking process, and to allow logging the check.
+.Pp
+Due to the way these live systems work, it was not possible to use
+.Xr checkisomd5 1
+for most of its modes of operation,
+and a file-based verification solution was required.
+.Sh CAVEATS
+There is no functionality within the
+.Nm
+utility to create list files that it can read.
+Since the
+.Xr md5sum 1
+utility can be used to create these files instead, there is nothing to be
+gained from duplicating this functionality.
+.Pp
+This utility is not a security tool.
+Numerous practical attacks exist for MD5, and it should only be used to detect
+accidental corruption, such as download errors, bad writes or bit rot.
+.br
+.Nm
+offers excellent protection against error,
+but little protection against espionage.
