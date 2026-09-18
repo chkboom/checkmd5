@@ -1,3 +1,8 @@
+/obj/
+/bin/
+/alire/
+/config/
+
 checkmd5
 *.o
 i18n/mo

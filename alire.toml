@@ -1,0 +1,9 @@
+name = "checkmd5"
+description = "Improved MD5 aggregate file checker"
+version = "0.500"
+
+authors = ["AK-47"]
+maintainers = ["none@example.com"]
+licenses = "Apache-2.0"
+website = ""
+tags = ["checksum", "md5", "hash", "integrity", "checkisomd5", "implantisomd5", "md5sum"]
