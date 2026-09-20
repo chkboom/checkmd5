@@ -123,7 +123,7 @@ exception
            Item => "Usage: checkmd5 [--force] [--verbose] [--machine] [--log=file] [--] file [...]");
          SetExit(Status => Console.Exit_BadCommand, Write_Log => BadCommand);
       end;
-   when X : Text_IO.Name_Error | Text_IO.Device_Error | Text_IO.Data_Error | Text_IO.End_Error =>
+   when X : others =>
       Log.Write(Text => "ERROR: " & Exception_Message (X), Output => Log.Log_Console);
       SetExit(Status => Console.Exit_System);
 end CheckMD5;

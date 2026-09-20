@@ -42,7 +42,13 @@ package body Log is
          end if;
       end if;
       if Output = Log_Console or else (Output = Verbose_Console and then Verbose_Mode) then
-         Console.Print(Message => Text, End_Line => End_Line);
+         begin
+            Console.Print(Message => Text, End_Line => End_Line);
+         exception
+            -- This procedure is used by exception handlers, so extinguish new exceptions.
+            -- A broken pipe here can mean an unhandled exception if allowed to bubble up.
+            when others => null;
+         end;
       end if;
    end Write;
 end Log;
