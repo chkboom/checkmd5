@@ -37,7 +37,7 @@ struct platform_stat {
 	long long size;
 	size_t blksize;
 };
-int platformStat(const char *path, struct platform_stat *ast)
+int platformStat(const char *restrict path, struct platform_stat *restrict ast)
 {
 	struct stat sb;
 	if (stat(path, &sb)!=0) {
@@ -48,7 +48,7 @@ int platformStat(const char *path, struct platform_stat *ast)
 	return 0;
 }
 
-int platformFileOpenSequentialRO(const char *path)
+int platformFileOpenSequentialRO(const char *restrict path)
 {
 	int fd = open(path, O_RDONLY);
 	if (fd > 0) {
@@ -56,7 +56,7 @@ int platformFileOpenSequentialRO(const char *path)
 	}
 	return fd;
 }
-long long platformFileRead(int fd, void *buffer, size_t size)
+long long platformFileRead(int fd, void *restrict buffer, size_t size)
 {
 	return read(fd, buffer, size);
 }

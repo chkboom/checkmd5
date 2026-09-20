@@ -89,10 +89,7 @@ package body Console is
 
    task body Progress is
       use Ada.Text_IO;
-      Targets_Total : Natural := 0;
-      Targets_Passed : Natural := 0;
       Bytes_Total : Large_Natural := 0;
-      Bytes_Passed : Large_Natural := 0;
       Bytes_Processed : Large_Natural := 0;
       Byte_Gap : Large_Natural := 0;
       Need_NewLine : Boolean := False;
@@ -105,8 +102,7 @@ package body Console is
    begin
       ProgressLoop: loop
          select
-            accept Prepare(Total_Targets : in Natural; Total_Bytes : in Large_Natural) do
-               Targets_Total := Total_Targets;
+            accept Prepare(Total_Bytes : in Large_Natural) do
                Bytes_Total := Total_Bytes;
                Byte_Gap := Total_Bytes / 1000;
                if Byte_Gap = 0 then

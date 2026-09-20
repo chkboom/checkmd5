@@ -24,7 +24,7 @@ package Console is
    procedure Finish(Status : in Exit_Status);
    function Running return Boolean;
    task Progress is
-      entry Prepare(Total_Targets : in Natural; Total_Bytes : in Large_Natural);
+      entry Prepare(Total_Bytes : in Large_Natural);
       entry Display(Next : out Large_Natural; Processed : in Large_Natural);
       entry Print(Message : in String; End_Line : in Boolean);
       entry Finish(Status : in Exit_Status);

@@ -23,7 +23,6 @@ with Ada.Strings.Fixed;
 with Ada.Calendar;
 with Ada.Calendar.Formatting;
 with Ada.Exceptions; use Ada.Exceptions;
-with Ada.Text_IO;
 with Console;
 with Log;
 with McHash;

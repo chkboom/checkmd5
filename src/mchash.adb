@@ -132,7 +132,7 @@ package body McHash is
       Status : Console.Exit_Status := Console.Exit_OK;
       FD : int := 0;
    begin
-      Console.Progress.Prepare(Total_Targets => Natural(Targets.Length), Total_Bytes => Total_Bytes);
+      Console.Progress.Prepare(Total_Bytes => Total_Bytes);
       Target_Loop: for T of Targets loop
          Log.Write(Output => Log.Verbose_Console, Text => "Target: " & T.Hash & " " & To_String(T.Path));
 
