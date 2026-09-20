@@ -1,6 +1,6 @@
 name = "checkmd5"
 description = "Improved MD5 aggregate file checker"
-version = "0.500"
+version = "0.102"
 
 authors = ["AK-47"]
 maintainers = ["none@example.com"]

@@ -23,6 +23,7 @@ with Ada.Strings.Fixed;
 with Ada.Calendar;
 with Ada.Calendar.Formatting;
 with Ada.Exceptions; use Ada.Exceptions;
+with Checkmd5_Config;
 with Console;
 with Log;
 with McHash;
@@ -116,7 +117,8 @@ exception
          if BadCommand then
             Log.Write(Text => "ERROR: " & Message, Output => Log.Log_Console);
          end if;
-         Text_IO.Put_Line (File => Text_IO.Standard_Error, Item => "checkMD5 - Version 0.200");
+         Text_IO.Put_Line (File => Text_IO.Standard_Error,
+           Item => "checkMD5 - Version " & Checkmd5_Config.Crate_Version);
          Text_IO.Put_Line (File => Text_IO.Standard_Error,
            Item => "Usage: checkmd5 [--force] [--verbose] [--machine] [--log=file] [--] file [...]");
          SetExit(Status => Console.Exit_BadCommand, Write_Log => BadCommand);

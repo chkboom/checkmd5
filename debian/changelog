@@ -1,5 +1,11 @@
-checkmd5 (24.8) mx; urgency=medium
+checkmd5 (0.102) mx; urgency=medium
 
-  * Initial release
+  * Rewrite in Ada
+
+ -- AK-47 <AK-47> Sun, 20 Aug 2026 13:06:11
+
+checkmd5 (0.100) mx; urgency=medium
+
+  * Initial deb release
 
  -- Adrian <adrian@mxlinux.org>  Sat, 24 Aug 2024 02:00:02 -0400
