@@ -36,30 +36,24 @@ procedure CheckMD5 is
    package CalFmt renames Ada.Calendar.Formatting;
    verbose : Boolean := False;
    ixArgFiles : Natural := CLI.Argument_Count + 1;
-   Command_Invalid : exception;
+   Handled_Exception : exception;
+   Command_Line_Help : exception;
 
-   procedure SetExit(Status : in Console.Exit_Status) is
+   procedure SetExit(Status : in Console.Exit_Status; Write_Log : in Boolean := True) is
    begin
       Console.Finish (Status => Status);
       CLI.Set_Exit_Status (Code => Status'Enum_Rep);
-      Log.Write(Text => "Exit:" & Status'Enum_Rep'Image);
+      if Write_Log then
+         Log.Write(Text => "Exit:" & Status'Enum_Rep'Image);
+      end if;
    end SetExit;
-   procedure PrintHelp is
-   begin
-		Text_IO.Put_Line (File => Text_IO.Standard_Error, Item => "checkMD5 - Version 0.200");
-      Text_IO.Put_Line (File => Text_IO.Standard_Error,
-        Item => "Usage: checkmd5 [--force] [--verbose] [--machine] [--log=file] [--] file [...]");
-   end PrintHelp;
 begin
    ArgSwitches: for ixArg in 1 .. CLI.Argument_Count loop
       declare
          curArg : constant String := CLI.Argument(ixArg);
       begin
          if curArg = "--help" then
-            Console.Finish (Status => Console.Exit_OK);
-            PrintHelp;
-            CLI.Set_Exit_Status (Console.Exit_OK'Enum_Rep);
-            return;
+            raise Command_Line_Help;
          elsif curArg = "--force" then
             McHash.Force := True;
          elsif curArg = "--verbose" then
@@ -81,7 +75,7 @@ begin
 
    -- Make sure there is at least one list file on the command line. --
    if ixArgFiles > CLI.Argument_Count then
-      raise Command_Invalid;
+      raise Command_Line_Help with "No list files specified";
    end if;
 
    -- Log the start time and all of the list file names on the command line. --
@@ -94,9 +88,16 @@ begin
    Log.Write(Text => "", End_Line => True);
 
    -- Obtain targets. --
-   for ixArg in ixArgFiles..CLI.Argument_Count loop
-      McHash.Add_Targets(List_Path => CLI.Argument(Number => ixArg));
-   end loop;
+   begin
+      for ixArg in ixArgFiles..CLI.Argument_Count loop
+         McHash.Add_Targets(List_Path => CLI.Argument(Number => ixArg));
+      end loop;
+   exception
+      when X : others =>
+         Log.Write(Text => Exception_Message (X), Output => Log.Log_Console);
+         SetExit(Status => Console.Exit_BadList);
+         raise Handled_Exception;
+   end;
 
    -- Check all targets and exit with the status of the check. --
    declare
@@ -106,14 +107,22 @@ begin
    end;
 
 exception
-   when Command_Invalid =>
-      Log.Write(Text => "ERROR: Invalid command line.", Output => Log.Log_Console);
-		PrintHelp;
+   when Handled_Exception =>
+      null; -- Exit status already set to appropriate value. Just exit the program at this point.
+   when X: Command_Line_Help =>
+      declare
+         Message : constant String := Exception_Message (X => X);
+         BadCommand : constant Boolean := (Message'Length > 0);
+      begin
+         if BadCommand then
+            Log.Write(Text => "ERROR: " & Message, Output => Log.Log_Console);
+         end if;
+         Text_IO.Put_Line (File => Text_IO.Standard_Error, Item => "checkMD5 - Version 0.200");
+         Text_IO.Put_Line (File => Text_IO.Standard_Error,
+           Item => "Usage: checkmd5 [--force] [--verbose] [--machine] [--log=file] [--] file [...]");
+         SetExit(Status => Console.Exit_BadCommand, Write_Log => BadCommand);
+      end;
+   when X : Text_IO.Name_Error | Text_IO.Device_Error | Text_IO.Data_Error | Text_IO.End_Error =>
+      Log.Write(Text => "ERROR: " & Exception_Message (X), Output => Log.Log_Console);
       SetExit(Status => Console.Exit_System);
-   when E : Text_IO.Name_Error | Text_IO.Device_Error | Text_IO.Data_Error | Text_IO.End_Error =>
-      Log.Write(Text => "ERROR: " & Exception_Message (E), Output => Log.Log_Console);
-      SetExit(Status => Console.Exit_System);
-   when E : others =>
-      Log.Write(Text => "ERROR: " & Exception_Message (E), Output => Log.Log_Console);
-      SetExit(Status => Console.Exit_BadList);
 end CheckMD5;

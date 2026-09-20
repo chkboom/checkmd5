@@ -52,11 +52,6 @@ package body McHash is
          end if;
          return False;
       end Is_Whitespace;
-      function Error(Message : in String) return String is
-      begin
-         return "ERROR (" & List_Path & ": "
-           & Line_No'Image & "," & Col_No'Image & "): " & Message;
-      end Error;
    begin
       Text_IO.Open(File => List_File, Name => List_Path, Mode => Text_IO.In_File);
       while not Text_IO.End_Of_File(List_File) loop
@@ -117,9 +112,14 @@ package body McHash is
       end loop;
    exception
       when X: others =>
-         Raise_Exception(E => Exception_Identity(X => X),
-           Message => "ERROR (" & List_Path & ": " & Line_No'Image & "," &
-           Col_No'Image & "): " & Exception_Message(X => X));
+         if Text_IO.Is_Open(File => List_File) then
+            Raise_Exception(E => Exception_Identity(X => X),
+              Message => "ERROR (" & List_Path & ": line" & Line_No'Image & ", col" &
+              Col_No'Image & "): " & Exception_Message(X => X));
+         else
+            Raise_Exception(E => Exception_Identity(X => X),
+              Message => "ERROR: " & Exception_Message(X => X));
+         end if;
    end Add_Targets;
 
    function Check_Targets return Console.Exit_Status is
@@ -179,8 +179,8 @@ package body McHash is
                end if;
             end;
          exception
-            when E: others =>
-               Log.Write(Output => Log.Log_Console, Text => "ERROR: " & Exception_Message(E) & ": " & T_Path);
+            when X: others =>
+               Log.Write(Output => Log.Log_Console, Text => "ERROR: " & Exception_Message(X) & ": " & T_Path);
                Status := Console.Exit_System;
          end;
          Platform.File_Close(fd => FD);

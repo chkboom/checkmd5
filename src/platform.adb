@@ -27,10 +27,17 @@ package body Platform is
       CR : constant long := platformPageSize;
    begin
       if CR < 0 then
-         raise Page_Size_Error;
+         raise Error_Page_Size with "Cannot obtain system page size";
       end if;
       return Natural(platformPageSize);
    end Page_Size;
+
+   function Error_Text(Errno : in int; Message : in String) return String is
+      function strerror (errno : int) return chars_ptr
+        with Import => True, Convention => C, External_Name => "strerror";
+   begin
+      return Message & " (" & Value(strerror(errno => Errno)) & ")";
+   end Error_Text;
 
    function Get_File_Info(Path : String) return File_Info is
       FI : File_Info;
@@ -50,7 +57,7 @@ package body Platform is
       CR := platformStat(path => C_Path, pstat => statrec'Access);
       Free(Item => C_Path);
       if CR /= 0 then
-         raise Stat_Error;
+         raise Error_Stat with Error_Text (Errno => CR, Message => "Cannot stat");
       end if;
       FI.Size := Large_Natural(statrec.size);
       FI.Block_Size := Stream_Element_Count(statrec.blksize);
@@ -66,7 +73,7 @@ package body Platform is
       C_Path := New_String(Path);
       CR := platformFileOpenSequentialRO(path => C_Path);
       if CR < 0 then
-         raise File_Open_Error;
+         raise Error_Open with Error_Text (Errno => CR, Message => "Cannot open");
       end if;
       return CR;
    end File_Open_Sequential_ReadOnly;
@@ -78,7 +85,7 @@ package body Platform is
    begin
       CR := platformFileRead(fd => fd, buffer => Buffer, size => Buffer'Length);
       if CR < 0 then
-         raise File_IO_Error;
+         raise Error_IO with Error_Text (Errno => int(CR), Message => "I/O error");
       end if;
       return Stream_Element_Count(CR);
    end File_Read;

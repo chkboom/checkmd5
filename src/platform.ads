@@ -35,5 +35,5 @@ package Platform is
      with Import => True, Convention => C, External_Name => "platformFileClose";
    function File_Read(fd : in int; Buffer : in out Stream_Element_Array) return Stream_Element_Count;
 
-   Page_Size_Error, Stat_Error, File_Open_Error, File_IO_Error : exception;
+   Error_Page_Size, Error_Stat, Error_Open, Error_IO : exception;
 end Platform;

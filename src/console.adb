@@ -16,7 +16,6 @@
 -- limitations under the License.
 with Ada.Characters; use Ada.Characters;
 with Ada.Characters.Latin_1;
-with Ada.Exceptions;
 with Ada.Interrupts.Names;
 with Ada.Strings; use Ada.Strings;
 with Ada.Strings.Fixed; use Ada.Strings.Fixed;
@@ -25,7 +24,6 @@ with Ada.Text_IO;
 package body Console is
    ConFile : constant Ada.Text_IO.File_Type := Ada.Text_IO.Standard_Output;
 
-   use Ada.Exceptions;
    use Ada.Interrupts.Names;
    pragma Unreserve_All_Interrupts; -- Ensure GNAT does not reserve SIGINT interrupt.
    protected Signals is

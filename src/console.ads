@@ -18,7 +18,8 @@ with McTypes; use McTypes;
 
 package Console is
    Machine_Friendly : Boolean := False;
-   type Exit_Status is (Exit_OK, Exit_BadCheck, Exit_Aborted, Exit_BadList, Exit_System);
+   type Exit_Status is (Exit_OK, Exit_BadCheck,
+     Exit_Aborted, Exit_System, Exit_BadList, Exit_BadCommand);
    procedure Print(Message : in String; End_Line : in Boolean := True);
    procedure Finish(Status : in Exit_Status);
    function Running return Boolean;
