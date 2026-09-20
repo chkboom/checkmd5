@@ -16,14 +16,16 @@
 -- limitations under the License.
 with Ada.Characters; use Ada.Characters;
 with Ada.Characters.Latin_1;
+with Ada.Exceptions;
 with Ada.Interrupts.Names;
 with Ada.Strings; use Ada.Strings;
 with Ada.Strings.Fixed; use Ada.Strings.Fixed;
 with Ada.Text_IO;
-with Log;
 
 package body Console is
+   ConFile : constant Ada.Text_IO.File_Type := Ada.Text_IO.Standard_Output;
 
+   use Ada.Exceptions;
    use Ada.Interrupts.Names;
    pragma Unreserve_All_Interrupts; -- Ensure GNAT does not reserve SIGINT interrupt.
    protected Signals is
@@ -68,13 +70,23 @@ package body Console is
       return Signals.KeepGoing and then not Progress'Terminated;
    end Running;
 
+   procedure Print(Message : in String; End_Line : in Boolean := True) is
+   begin
+      Progress.Print(Message => Message, End_Line => End_Line);
+   exception
+      when Tasking_Error =>
+         if End_Line then
+            Ada.Text_IO.Put(File => ConFile, Item => Message);
+         else
+            Ada.Text_IO.Put_Line(File => ConFile, Item => Message);
+         end if;
+   end Print;
+
    procedure Finish(Status : in Exit_Status) is
    begin
-      if not Progress'Terminated then
-         Progress.Finish(Status => Status);
-      end if;
+      Progress.Finish(Status => Status);
    exception
-      when others => null;
+      when Tasking_Error => null;
    end Finish;
 
    task body Progress is
@@ -104,7 +116,7 @@ package body Console is
                end if;
             end Prepare;
             if not Console.Machine_Friendly then
-               Put_Line(File => Standard_Error, Item => "Press [Esc] to abort the integrity check.");
+               Put_Line(File => ConFile, Item => "Press [Esc] to abort the integrity check.");
             end if;
          or
             accept Display(Next : out Large_Natural; Processed : in Large_Natural) do
@@ -116,30 +128,38 @@ package body Console is
             end Display;
             -- The display of the progress indicator.
             if Console.Machine_Friendly then
-               Put_Line(File => Standard_Error, Item => Current_Percentage);
+               Put_Line(File => ConFile, Item => Current_Percentage);
             else
-               Put(File => Standard_Error,
-                   Item => Latin_1.CR & "Checking: " & Current_Percentage);
+               Put(File => ConFile, Item => Latin_1.CR & "Checking: " & Current_Percentage);
                Need_NewLine := True;
             end if;
          or
-            accept Finish(Status : in Exit_Status) do
-               if not Progress'Terminated then
-                  if Need_NewLine then
-                     New_Line(File => Standard_Error);
-                  end if;
-                  case Status is
-                     when Exit_OK =>
-                        Put_Line(File => Standard_Error, Item => "The integrity check has passed.");
-                     when Exit_BadCheck =>
-                        Put_Line(File => Standard_Error, Item => "The integrity check has failed.");
-                     when Exit_Aborted =>
-                        Put_Line(File => Standard_Error, Item => "The integrity check was aborted.");
-                        Log.Write(Text => "Aborted: " & Current_Percentage);
-                     when others =>
-                        Put_Line(File => Standard_Error, Item => "The integrity check could not be completed.");
-                  end case;
+            accept Print(Message : in String; End_Line : in Boolean) do
+               if Need_NewLine then
+                  New_Line(File => ConFile);
                end if;
+               if End_Line then
+                  Put_Line(File => ConFile, Item => Message);
+               else
+                  Put(File => ConFile, Item => Message);
+               end if;
+               Need_NewLine := not End_Line;
+            end Print;
+         or
+            accept Finish(Status : in Exit_Status) do
+               if Need_NewLine then
+                  New_Line(File => ConFile);
+               end if;
+               case Status is
+                  when Exit_OK =>
+                     Put_Line(File => ConFile, Item => "The integrity check has passed.");
+                  when Exit_BadCheck =>
+                     Put_Line(File => ConFile, Item => "The integrity check has failed.");
+                  when Exit_Aborted =>
+                     Put_Line(File => ConFile, Item => "The integrity check was aborted.");
+                  when others =>
+                     Put_Line(File => ConFile, Item => "The integrity check could not be completed.");
+               end case;
             end Finish;
             exit ProgressLoop;
          or

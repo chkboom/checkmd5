@@ -17,6 +17,7 @@
 pragma Ada_2022;
 
 with Ada.Text_IO;
+with Console;
 
 package body Log is
    use Ada;
@@ -41,10 +42,7 @@ package body Log is
          end if;
       end if;
       if Output = Log_Console or else (Output = Verbose_Console and then Verbose_Mode) then
-         Text_IO.Put(File => Text_IO.Standard_Error, Item => Text);
-         if End_Line then
-            Text_IO.New_Line(File => Text_IO.Standard_Error);
-         end if;
+         Console.Print(Message => Text, End_Line => End_Line);
       end if;
    end Write;
 end Log;

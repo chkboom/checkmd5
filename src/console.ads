@@ -19,11 +19,13 @@ with McTypes; use McTypes;
 package Console is
    Machine_Friendly : Boolean := False;
    type Exit_Status is (Exit_OK, Exit_BadCheck, Exit_Aborted, Exit_BadList, Exit_System);
+   procedure Print(Message : in String; End_Line : in Boolean := True);
    procedure Finish(Status : in Exit_Status);
    function Running return Boolean;
    task Progress is
       entry Prepare(Total_Targets : in Natural; Total_Bytes : in Large_Natural);
       entry Display(Next : out Large_Natural; Processed : in Large_Natural);
-      entry Finish(Status : Exit_Status);
+      entry Print(Message : in String; End_Line : in Boolean);
+      entry Finish(Status : in Exit_Status);
    end Progress;
 end Console;

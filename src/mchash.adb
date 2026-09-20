@@ -25,7 +25,6 @@ with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
 with Ada.Strings.Fixed; use Ada.Strings.Fixed;
 with Ada.Text_IO;
 with Ada.Exceptions;
-with Ada.Streams;
 with GNAT.MD5;
 with Interfaces.C;
 
@@ -42,6 +41,7 @@ package body McHash is
 
    procedure Add_Targets(List_Path : in String) is
       use Ada;
+      use Ada.Exceptions;
       List_File : Text_IO.File_Type;
       Line_No : Natural := 0;
       Col_No : Natural := 0;
@@ -116,7 +116,10 @@ package body McHash is
          end;
       end loop;
    exception
-      when others => raise;
+      when X: others =>
+         Raise_Exception(E => Exception_Identity(X => X),
+           Message => "ERROR (" & List_Path & ": " & Line_No'Image & "," &
+           Col_No'Image & "): " & Exception_Message(X => X));
    end Add_Targets;
 
    function Check_Targets return Console.Exit_Status is
@@ -155,6 +158,7 @@ package body McHash is
                if Checked_Bytes >= Prog_Next then
                   Console.Progress.Display(Next => Prog_Next, Processed => Checked_Bytes);
                   if not Console.Running then
+                     Log.Write(Text => "Aborted: " & T_Path, Output => Log.Verbose_Console);
                      Status := Console.Exit_Aborted;
                      exit Target_Loop;
                   end if;
@@ -170,13 +174,13 @@ package body McHash is
                   Log.Write(Text => "Passed: " & Calc_Hash & " " & T_Path, Output => Log.Verbose_Console);
                else
                   Log.Write(Text => "Failed: " & Calc_Hash & " " & T_Path, Output => Log.Verbose_Console);
-                  Ada.Text_IO.Put_Line(T_Path & ": Checksum mismatch");
+                  Console.Print(Message => "Checksum mismatch: " & T_Path);
                   Status := Console.Exit_BadCheck;
                end if;
             end;
          exception
             when E: others =>
-               Log.Write(Output => Log.Log_Console, Text => "Exception:" & Exception_Message(E) & ":" & T_Path);
+               Log.Write(Output => Log.Log_Console, Text => "ERROR: " & Exception_Message(E) & ": " & T_Path);
                Status := Console.Exit_System;
          end;
          Platform.File_Close(fd => FD);
@@ -187,7 +191,6 @@ package body McHash is
 
       Console.Progress.Finish(Status => Status);
       declare
-         use Ada.Strings.Fixed;
          function NumStr(I : in Large_Natural) return String is ( Trim(Source => I'Image, Side => Left) );
          function NumStr(I : in Natural) return String is ( Trim(Source => I'Image, Side => Left) );
       begin

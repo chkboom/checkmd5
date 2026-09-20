@@ -21,5 +21,5 @@ package Log is
    type Output_Mode is (Log_Only, Log_Console, Verbose_Console);
    procedure SetupFile(Path : in String);
    function isFileSet return Boolean;
-   procedure Write(Text: in String; End_Line : in Boolean := true; Output : in Output_Mode := Log_Only);
+   procedure Write(Text: in String; End_Line : in Boolean := True; Output : in Output_Mode := Log_Only);
 end Log;
