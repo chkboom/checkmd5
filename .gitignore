@@ -2,3 +2,10 @@
 /bin/
 /alire/
 /config/
+
+debian/.debhelper/*
+debian/debhelper-build-stamp
+debian/files
+debian/checkmd5
+debian/*.substvars
+debian/*.log

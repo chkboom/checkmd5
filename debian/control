@@ -1,12 +1,12 @@
 Source: checkmd5
 Section: admin
 Priority: optional
-Maintainer: Adrian <adrian@mxlinux.org>
-Build-Depends: debhelper (>=12),
-	alire (>=1.2.1),
-	gprbuild (>=2025.0),
-	gnat (>=14.2),
-	gcc (>=14.2)
+Maintainer: AK-47
+Build-Depends: debhelper-compat (= 13),
+	alire (>=1.2),
+	gprbuild (>=2025),
+	gnat (>=14),
+	gcc (>=14)
 Standards-Version: 4.7.2
 Vcs-Git: git://github.com/chkboom/checkmd5
 

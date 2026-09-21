@@ -2,7 +2,7 @@ checkmd5 (0.102) mx; urgency=medium
 
   * Rewrite in Ada
 
- -- AK-47 <AK-47> Sun, 20 Aug 2026 13:06:11
+ -- AK-47 <AK-47>  Sun, 20 Aug 2026 13:06:11 +0000
 
 checkmd5 (0.100) mx; urgency=medium
 
