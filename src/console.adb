@@ -20,6 +20,7 @@ with Ada.Interrupts.Names;
 with Ada.Strings; use Ada.Strings;
 with Ada.Strings.Fixed; use Ada.Strings.Fixed;
 with Ada.Text_IO;
+with Platform;
 
 package body Console is
    ConFile : constant Ada.Text_IO.File_Type := Ada.Text_IO.Standard_Output;
@@ -100,6 +101,9 @@ package body Console is
          return Trim(Source => Percent'Image, Side => Left) & "%";
       end Current_Percentage;
    begin
+      if not Console.Machine_Friendly then
+         Platform.Terminal_Setup (Revert => False);
+      end if;
       ProgressLoop: loop
          select
             accept Prepare(Total_Bytes : in Large_Natural) do
@@ -171,6 +175,9 @@ package body Console is
          end;
       end loop ProgressLoop;
       Signals.Finish;
+      if not Console.Machine_Friendly then
+         Platform.Terminal_Setup(Revert => True);
+      end if;
    end Progress;
 
 end Console;

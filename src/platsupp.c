@@ -26,6 +26,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <termios.h>
 
 long platformPageSize(void)
 {
@@ -63,4 +64,19 @@ long long platformFileRead(int fd, void *restrict buffer, size_t size)
 void platformFileClose(int fd)
 {
 	close(fd);
+}
+
+void platformTerminalSetup(int revert)
+{
+	static struct termios tio = {0};
+	static tcflag_t oldlflag = 0;
+	if(!revert) {
+		tcgetattr(0, &tio);
+		oldlflag = tio.c_lflag;
+		tio.c_lflag &= ~(ICANON | ECHO);
+		tcsetattr(0, TCSANOW, &tio);
+	} else {
+		tio.c_lflag = oldlflag;
+		tcsetattr(0, TCSANOW, &tio);
+	}
 }

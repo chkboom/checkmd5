@@ -89,4 +89,15 @@ package body Platform is
       end if;
       return Stream_Element_Count(CR);
    end File_Read;
+
+   procedure Terminal_Setup(Revert : Boolean) is
+      procedure platformTerminalSetup(revert : int)
+        with Import => True, Convention => C, External_Name => "platformTerminalSetup";
+   begin
+      if Revert then
+         platformTerminalSetup (revert => 1);
+      else
+         platformTerminalSetup (revert => 0);
+      end if;
+   end Terminal_Setup;
 end Platform;
