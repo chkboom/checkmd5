@@ -52,8 +52,11 @@ begin
       declare
          curArg : constant String := CLI.Argument(ixArg);
       begin
+         if curArg'Length < 1 then
+            raise Command_Line_Help with "Empty argument" & ixArg'Image;
+         end if;
          if curArg = "--help" then
-            raise Command_Line_Help;
+            raise Command_Line_Help with ""; -- Empty string suppresses "ERROR" line
          elsif curArg = "--force" then
             McHash.Force := True;
          elsif curArg = "--verbose" then
@@ -65,9 +68,11 @@ begin
          elsif curArg = "--" then -- End of flag arguments. Files start after this.
             ixArgFiles := ixArg + 1;
             exit ArgSwitches;
-         else -- Files start here.
+         elsif curArg(1) /= '-' then -- Files start here.
             ixArgFiles := ixArg;
             exit ArgSwitches;
+         else
+            raise Command_Line_Help with "Unknown option " & curArg;
          end if;
       end;
    end loop ArgSwitches;
