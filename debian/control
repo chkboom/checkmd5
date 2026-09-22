@@ -1,13 +1,12 @@
 Source: checkmd5
 Section: admin
-Priority: optional
 Maintainer: AK-47
 Build-Depends: debhelper-compat (= 13),
 	alire (>=1.2),
 	gprbuild (>=2025),
 	gnat (>=14),
 	gcc (>=14)
-Standards-Version: 4.7.2
+Standards-Version: 4.7.4
 Vcs-Git: git://github.com/chkboom/checkmd5
 
 Package: checkmd5

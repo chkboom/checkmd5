@@ -1,3 +1,14 @@
+checkmd5 (0.103) mx; urgency=medium
+
+  * Fixed unhandled exception if terminal pipe breaks.
+  * Use correct terminal setup for progress interface.
+  * Cleanup source tree and fixed deb package build.
+  * Fixed "ERROR" when using the --help option.
+  * Add detection of unknown options.
+  * Fixed logging of abortions.
+
+ -- AK-47 <AK-47>  Tue, 22 Sep 2026 01:54:27 +0000
+
 checkmd5 (0.102) mx; urgency=medium
 
   * Rewrite in Ada

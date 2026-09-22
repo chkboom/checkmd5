@@ -20,6 +20,9 @@ package Console is
    Machine_Friendly : Boolean := False;
    type Exit_Status is (Exit_OK, Exit_BadCheck,
      Exit_Aborted, Exit_System, Exit_BadList, Exit_BadCommand);
+   type Percentage is  delta 10.0 ** (-1) range 0.0 .. 100.0;
+   function Percent(Value, Total : in Large_Natural) return Percentage
+      is (Percentage(100.0 * Float(Value) / Float(Total)));
    procedure Print(Message : in String; End_Line : in Boolean := True);
    procedure Finish(Status : in Exit_Status);
    function Running return Boolean;

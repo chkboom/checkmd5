@@ -94,12 +94,6 @@ package body Console is
       Bytes_Processed : Large_Natural := 0;
       Byte_Gap : Large_Natural := 0;
       Need_NewLine : Boolean := False;
-      function Current_Percentage return String is
-         type Percentage is  delta 10.0 ** (-1) range 0.0 .. 100.0;
-         Percent : constant Percentage := Percentage(100.0 * Float(Bytes_Processed) / Float(Bytes_Total));
-      begin
-         return Trim(Source => Percent'Image, Side => Left) & "%";
-      end Current_Percentage;
    begin
       if not Console.Machine_Friendly then
          Platform.Terminal_Setup (Revert => False);
@@ -125,12 +119,19 @@ package body Console is
                end if;
             end Display;
             -- The display of the progress indicator.
-            if Console.Machine_Friendly then
-               Put_Line(File => ConFile, Item => Current_Percentage);
-            else
-               Put(File => ConFile, Item => Latin_1.CR & "Checking: " & Current_Percentage);
-               Need_NewLine := True;
-            end if;
+            declare
+               Current_Percent : constant Percentage
+                 := Console.Percent(Value => Bytes_Processed, Total => Bytes_Total);
+               Percent_Text : constant String
+                 := Trim(Source => Current_Percent'Image, Side => Left) & "%";
+            begin
+               if Console.Machine_Friendly then
+                  Put_Line(File => ConFile, Item => Percent_Text);
+               else
+                  Put(File => ConFile, Item => Latin_1.CR & "Checking: " & Percent_Text);
+                  Need_NewLine := True;
+               end if;
+            end;
          or
             accept Print(Message : in String; End_Line : in Boolean) do
                if Need_NewLine then

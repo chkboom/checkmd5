@@ -158,7 +158,8 @@ package body McHash is
                if Checked_Bytes >= Prog_Next then
                   Console.Progress.Display(Next => Prog_Next, Processed => Checked_Bytes);
                   if not Console.Running then
-                     Log.Write(Text => "Aborted: " & T_Path, Output => Log.Verbose_Console);
+                     Log.Write(Output => Log.Verbose_Console, Text => "Aborted:"
+                       & Console.Percent(Value =>Checked_Bytes, Total =>Total_Bytes)'Image & "%");
                      Status := Console.Exit_Aborted;
                      exit Target_Loop;
                   end if;

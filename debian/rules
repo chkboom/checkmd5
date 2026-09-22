@@ -8,7 +8,6 @@ override_dh_auto_clean:
 
 override_dh_auto_build:
 	alr build --release
-	strip bin/checkmd5
 
 %:
 	dh $@ --no-automatic-dbgsym --parallel
