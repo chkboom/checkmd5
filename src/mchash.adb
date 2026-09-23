@@ -134,7 +134,7 @@ package body McHash is
    begin
       Console.Progress.Prepare(Total_Bytes => Total_Bytes);
       Target_Loop: for T of Targets loop
-         Log.Write(Output => Log.Verbose_Console, Text => "Target: " & T.Hash & " " & To_String(T.Path));
+         Log.Write(Mode => Log.Verbose_Console, Text => "Target: " & T.Hash & " " & To_String(T.Path));
 
          declare
             use Ada.Streams;
@@ -158,7 +158,7 @@ package body McHash is
                if Checked_Bytes >= Prog_Next then
                   Console.Progress.Display(Next => Prog_Next, Processed => Checked_Bytes);
                   if not Console.Running then
-                     Log.Write(Output => Log.Verbose_Console, Text => "Aborted:"
+                     Log.Write(Mode => Log.Verbose_Console, Text => "Aborted:"
                        & Console.Percent(Value =>Checked_Bytes, Total =>Total_Bytes)'Image & "%");
                      Status := Console.Exit_Aborted;
                      exit Target_Loop;
@@ -172,16 +172,16 @@ package body McHash is
                if Calc_Hash = T.Hash then
                   Passed_Targets := Passed_Targets + 1;
                   Passed_Bytes := Passed_Bytes + T.Size;
-                  Log.Write(Text => "Passed: " & Calc_Hash & " " & T_Path, Output => Log.Verbose_Console);
+                  Log.Write(Text => "Passed: " & Calc_Hash & " " & T_Path, Mode => Log.Verbose_Console);
                else
-                  Log.Write(Text => "Failed: " & Calc_Hash & " " & T_Path, Output => Log.Verbose_Console);
+                  Log.Write(Text => "Failed: " & Calc_Hash & " " & T_Path, Mode => Log.Verbose_Console);
                   Console.Print(Message => "Checksum mismatch: " & T_Path);
                   Status := Console.Exit_BadCheck;
                end if;
             end;
          exception
             when X: others =>
-               Log.Write(Output => Log.Log_Console, Text => "ERROR: " & Exception_Message(X) & ": " & T_Path);
+               Log.Write(Mode => Log.Log_Console, Text => "ERROR: " & Exception_Message(X) & ": " & T_Path);
                Status := Console.Exit_System;
          end;
          Platform.File_Close(fd => FD);
@@ -197,7 +197,7 @@ package body McHash is
       begin
          Log.Write(Text => "Result: " & NumStr(Passed_Targets) & "/" & NumStr(Natural(Targets.Length))
            & " targets (" & NumStr(Passed_Bytes) & "/" & NumStr(Total_Bytes) & " bytes) passed",
-           Output => Log.Verbose_Console);
+           Mode => Log.Verbose_Console);
       end;
       return Status;
    end Check_Targets;

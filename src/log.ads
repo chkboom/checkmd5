@@ -19,7 +19,8 @@ pragma Ada_2022;
 package Log is
    Verbose_Mode : Boolean := False;
    type Output_Mode is (Log_Only, Log_Console, Verbose_Console);
+   type Line_Part is (Line_Whole, Line_Start, Line_Text, Line_End);
    procedure SetupFile(Path : in String);
    function isFileSet return Boolean;
-   procedure Write(Text: in String; End_Line : in Boolean := True; Output : in Output_Mode := Log_Only);
+   procedure Write(Text: in String; Part : in Line_Part := Line_Whole; Mode : in Output_Mode := Log_Only);
 end Log;

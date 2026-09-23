@@ -85,12 +85,12 @@ begin
 
    -- Log the start time and all of the list file names on the command line. --
    Log.Write(Text => "Start: " & CalFmt.Local_Image(Date => Cal.Clock, Include_Time_Fraction => True));
-   Log.Write(Text => "Lists:", End_Line => False);
+   Log.Write(Text => "Lists:", Part => Log.Line_Start);
    for ixArg in ixArgFiles..CLI.Argument_Count loop
-      Log.Write(Text => " ", End_Line => False);
-      Log.Write(Text => CLI.Argument(Number => ixArg), End_Line => False);
+      Log.Write(Text => " ", Part => Log.Line_Text);
+      Log.Write(Text => CLI.Argument(Number => ixArg), Part => Log.Line_Text);
    end loop;
-   Log.Write(Text => "", End_Line => True);
+   Log.Write(Text => "", Part => Log.Line_End);
 
    -- Obtain targets. --
    begin
@@ -99,7 +99,7 @@ begin
       end loop;
    exception
       when X : others =>
-         Log.Write(Text => Exception_Message (X), Output => Log.Log_Console);
+         Log.Write(Text => Exception_Message (X), Mode => Log.Log_Console);
          SetExit(Status => Console.Exit_BadList);
          raise Handled_Exception;
    end;
@@ -120,7 +120,7 @@ exception
          BadCommand : constant Boolean := (Message'Length > 0);
       begin
          if BadCommand then
-            Log.Write(Text => "ERROR: " & Message, Output => Log.Log_Console);
+            Log.Write(Text => "ERROR: " & Message, Mode => Log.Log_Console);
          end if;
          Text_IO.Put_Line (File => Text_IO.Standard_Error,
            Item => "checkMD5 - Version " & Version.VERSION);
@@ -129,6 +129,6 @@ exception
          SetExit(Status => Console.Exit_BadCommand, Write_Log => BadCommand);
       end;
    when X : others =>
-      Log.Write(Text => "ERROR: " & Exception_Message (X), Output => Log.Log_Console);
+      Log.Write(Text => "ERROR: " & Exception_Message (X), Mode => Log.Log_Console);
       SetExit(Status => Console.Exit_System);
 end CheckMD5;
