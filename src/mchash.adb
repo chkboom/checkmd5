@@ -110,9 +110,11 @@ package body McHash is
             Targets.Append(New_Item => New_Target);
          end;
       end loop;
+      Text_IO.Close (File => List_File);
    exception
       when X: others =>
          if Text_IO.Is_Open(File => List_File) then
+            Text_IO.Close(File => List_File);
             Raise_Exception(E => Exception_Identity(X => X),
               Message => "ERROR (" & List_Path & ": line" & Line_No'Image & ", col" &
               Col_No'Image & "): " & Exception_Message(X => X));
@@ -161,6 +163,7 @@ package body McHash is
                      Log.Write(Mode => Log.Verbose_Console, Text => "Aborted:"
                        & Console.Percent(Value =>Checked_Bytes, Total =>Total_Bytes)'Image & "%");
                      Status := Console.Exit_Aborted;
+                     Platform.File_Close(fd => FD);
                      exit Target_Loop;
                   end if;
                end if;
