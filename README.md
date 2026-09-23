@@ -35,6 +35,16 @@ checkmd5 --machine *.md5 | yad -progress
 The `--machine` option will produce one line for each progress update, which typically means 1000 lines in total (100x 0.1% increments).  
 The `awk` command in the first example discards the fractional component because `dialog` does not like the 0.1% resolution of the checkmd5 output.
 
+Troubleshooting
+---------------
+
+### Long lines of text appear even without the --verbose option
+This indicates that an attempt was made to write something to the log file has failed. When this happens, checkMD5 attempts to write the entry to the console.
+If this fails, then there is nothing left to write to, so the entry is lost for all eternity.
+
+This could happen if the storage device for the log file doesn't have enough space or checkMD5 has not been granted permission to write to the log file.
+On some systems, a security framework such as AppArmor or SELinux may be interfering with the attempt to write to the log file.
+
 How to Build
 ------------
 Building checkmd5 requires some GNAT tools (for Ada) to be installed:

@@ -129,6 +129,6 @@ exception
          SetExit(Status => Console.Exit_BadCommand, Write_Log => BadCommand);
       end;
    when X : others =>
-      Log.Write(Text => "ERROR: " & Exception_Message (X), Mode => Log.Log_Console);
+      Log.Write(Text => "ERROR: " & Exception_Message(X), Mode => Log.Log_Console);
       SetExit(Status => Console.Exit_System);
 end CheckMD5;
