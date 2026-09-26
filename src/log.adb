@@ -16,7 +16,6 @@
 -- limitations under the License.
 pragma Ada_2022;
 
-with Ada.Exceptions;
 with Ada.Text_IO.Editing;
 with Ada.Real_Time;
 with Ada.Strings.Fixed;
@@ -71,7 +70,7 @@ package body Log is
             end if;
          end if;
       exception
-         when X : others => Print_To_Console := True;
+         when others => Print_To_Console := True;
       end Write_To_Log_File;
 
       if Print_To_Console then
@@ -81,6 +80,6 @@ package body Log is
    exception
       -- This procedure is used by exception handlers, so extinguish new exceptions.
       -- A broken pipe here can mean an unhandled exception if allowed to bubble up.
-      when X : others => null;
+      when others => null;
    end Write;
 end Log;

@@ -33,7 +33,7 @@ package body Platform is
    end Page_Size;
 
    function Error_Text(Errno : in int; Message : in String) return String is
-      function strerror (errno : int) return chars_ptr
+      function strerror(errno : int) return chars_ptr
         with Import => True, Convention => C, External_Name => "strerror";
    begin
       return Message & " (" & Value(strerror(errno => Errno)) & ")";
@@ -47,7 +47,7 @@ package body Platform is
          blksize : size_t;
       end record
         with Convention => C_Pass_By_Copy;
-      function platformStat (path : chars_ptr; pstat : access platform_stat) return int
+      function platformStat(path : chars_ptr; pstat : access platform_stat) return int
         with Import => True,  Convention => C, External_Name => "platformStat";
       statrec : aliased platform_stat;
       C_Path : chars_ptr;
@@ -57,7 +57,7 @@ package body Platform is
       CR := platformStat(path => C_Path, pstat => statrec'Access);
       Free(Item => C_Path);
       if CR /= 0 then
-         raise Error_Stat with Error_Text (Errno => CR, Message => "Cannot stat");
+         raise Error_Stat with Error_Text(Errno => CR, Message => "Cannot stat");
       end if;
       FI.Size := Large_Natural(statrec.size);
       FI.Block_Size := Stream_Element_Count(statrec.blksize);
@@ -73,19 +73,20 @@ package body Platform is
       C_Path := New_String(Path);
       CR := platformFileOpenSequentialRO(path => C_Path);
       if CR < 0 then
-         raise Error_Open with Error_Text (Errno => CR, Message => "Cannot open");
+         raise Error_Open with Error_Text(Errno => CR, Message => "Cannot open");
       end if;
       return CR;
    end File_Open_Sequential_ReadOnly;
 
    function File_Read(fd : in int; Buffer : in out Stream_Element_Array) return Stream_Element_Count is
-      function platformFileRead(fd : int; buffer : in out Stream_Element_Array; size : size_t) return long_long
+      function platformFileRead(fd : int; buffer : in out Stream_Element_Array;
+        size : size_t) return long_long
         with Import => True, Convention => C, External_Name => "platformFileRead";
       CR : long_long := -1;
    begin
       CR := platformFileRead(fd => fd, buffer => Buffer, size => Buffer'Length);
       if CR < 0 then
-         raise Error_IO with Error_Text (Errno => int(CR), Message => "I/O error");
+         raise Error_IO with Error_Text(Errno => int(CR), Message => "I/O error");
       end if;
       return Stream_Element_Count(CR);
    end File_Read;
@@ -95,9 +96,9 @@ package body Platform is
         with Import => True, Convention => C, External_Name => "platformTerminalSetup";
    begin
       if Revert then
-         platformTerminalSetup (revert => 1);
+         platformTerminalSetup(revert => 1);
       else
-         platformTerminalSetup (revert => 0);
+         platformTerminalSetup(revert => 0);
       end if;
    end Terminal_Setup;
 end Platform;

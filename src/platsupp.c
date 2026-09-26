@@ -41,7 +41,7 @@ struct platform_stat {
 int platformStat(const char *restrict path, struct platform_stat *restrict ast)
 {
 	struct stat sb;
-	if (stat(path, &sb)!=0) {
+	if(stat(path, &sb)!=0) {
 		return errno;
 	}
 	ast->size = sb.st_size;
@@ -52,7 +52,7 @@ int platformStat(const char *restrict path, struct platform_stat *restrict ast)
 int platformFileOpenSequentialRO(const char *restrict path)
 {
 	int fd = open(path, O_RDONLY);
-	if (fd > 0) {
+	if(fd > 0) {
 		posix_fadvise(fd, 0, 0, POSIX_FADV_SEQUENTIAL);
 	}
 	return fd;

@@ -110,7 +110,7 @@ package body McHash is
             Targets.Append(New_Item => New_Target);
          end;
       end loop;
-      Text_IO.Close (File => List_File);
+      Text_IO.Close(File => List_File);
    exception
       when X: others =>
          if Text_IO.Is_Open(File => List_File) then

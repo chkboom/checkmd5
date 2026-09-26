@@ -41,8 +41,8 @@ procedure CheckMD5 is
 
    procedure SetExit(Status : in Console.Exit_Status; Write_Log : in Boolean := True) is
    begin
-      Console.Finish (Status => Status);
-      CLI.Set_Exit_Status (Code => Status'Enum_Rep);
+      Console.Finish(Status => Status);
+      CLI.Set_Exit_Status(Code => Status'Enum_Rep);
       if Write_Log then
          Log.Write(Text => "Exit:" & Status'Enum_Rep'Image);
       end if;
@@ -99,7 +99,7 @@ begin
       end loop;
    exception
       when X : others =>
-         Log.Write(Text => Exception_Message (X), Mode => Log.Log_Console);
+         Log.Write(Text => Exception_Message(X), Mode => Log.Log_Console);
          SetExit(Status => Console.Exit_BadList);
          raise Handled_Exception;
    end;
@@ -116,15 +116,15 @@ exception
       null; -- Exit status already set to appropriate value. Just exit the program at this point.
    when X: Command_Line_Help =>
       declare
-         Message : constant String := Exception_Message (X => X);
+         Message : constant String := Exception_Message(X => X);
          BadCommand : constant Boolean := (Message'Length > 0);
       begin
          if BadCommand then
             Log.Write(Text => "ERROR: " & Message, Mode => Log.Log_Console);
          end if;
-         Text_IO.Put_Line (File => Text_IO.Standard_Error,
+         Text_IO.Put_Line(File => Text_IO.Standard_Error,
            Item => "checkMD5 - Version " & Version.VERSION);
-         Text_IO.Put_Line (File => Text_IO.Standard_Error,
+         Text_IO.Put_Line(File => Text_IO.Standard_Error,
            Item => "Usage: checkmd5 [--force] [--verbose] [--machine] [--log=file] [--] file [...]");
          SetExit(Status => Console.Exit_BadCommand, Write_Log => BadCommand);
       end;

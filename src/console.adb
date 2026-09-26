@@ -96,7 +96,7 @@ package body Console is
       Need_NewLine : Boolean := False;
    begin
       if not Console.Machine_Friendly then
-         Platform.Terminal_Setup (Revert => False);
+         Platform.Terminal_Setup(Revert => False);
       end if;
       ProgressLoop: loop
          select
