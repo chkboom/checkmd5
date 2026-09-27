@@ -63,6 +63,12 @@ Note that with `alr build` you can add options like `--release` for building a r
 Release Notes
 -------------
 
+### Version 0.104
+* Add timecode to log entry lines.
+* Flush each line to the log file.
+* Fixed file descriptor and stream leaks.
+* Fixed log file exception handling.
+
 ### Version 0.103
 * Fixed unhandled exception if terminal pipe breaks.
 * Use correct terminal setup for progress interface.
