@@ -1,0 +1,34 @@
+Format: 1.8
+Date: Sun, 27 Sep 2026 02:19:24 +0000
+Source: checkmd5
+Binary: checkmd5
+Architecture: source amd64
+Version: 0.104
+Distribution: mx
+Urgency: medium
+Maintainer: AK-47
+Changed-By: AK-47 <AK-47>
+Description:
+ checkmd5   - Improved MD5 aggregate file checker
+Changes:
+ checkmd5 (0.104) mx; urgency=medium
+ .
+   * Add timecode to log entry lines.
+   * Flush each line to the log file.
+   * Fixed file descriptor and stream leaks.
+   * Fixed log file exception handling.
+Checksums-Sha1:
+ 23b85e6c7034ecb548a71d3c545f9bc526430231 595 checkmd5_0.104.dsc
+ c511f3763a219bbb991b01cf852f7245b16cefae 16616 checkmd5_0.104.tar.xz
+ 35bb532542e5bddb4437bdf17192c5133f09e8ed 5496 checkmd5_0.104_amd64.buildinfo
+ 8a2a278e807ece67c1716e7686eb56ee18361ee7 61256 checkmd5_0.104_amd64.deb
+Checksums-Sha256:
+ f6df70298b4646ba11024484a25e7490d710f23e0cfe826d2f02f24624c6158e 595 checkmd5_0.104.dsc
+ 1b0cf782a7c064cc3467c217877ce4d3ce38a7abe2e762bff113d62289509c62 16616 checkmd5_0.104.tar.xz
+ 7ed0373e44f0ffb77cf2cd23c7f372a7934e5d4a2430ae1813b7bfabf175d54f 5496 checkmd5_0.104_amd64.buildinfo
+ 9eba43dc05cf785d9dc71499e0b4240e06729ae62dc7517c2653b2c521179dcc 61256 checkmd5_0.104_amd64.deb
+Files:
+ 9f4b513c312ca1260ba6567d78596870 595 admin optional checkmd5_0.104.dsc
+ 9a8cb5765591d6bf9d44c340e80d4bec 16616 admin optional checkmd5_0.104.tar.xz
+ ed8752d4d6efa5767302477c37e8930f 5496 admin optional checkmd5_0.104_amd64.buildinfo
+ 8d60f104bb94137eacc471f9304f78d0 61256 admin optional checkmd5_0.104_amd64.deb

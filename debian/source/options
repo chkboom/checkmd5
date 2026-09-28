@@ -1,0 +1,5 @@
+tar-ignore
+tar-ignore = "alire"
+tar-ignore = "config"
+tar-ignore = "obj"
+tar-ignore = "bin"

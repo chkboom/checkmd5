@@ -1,3 +1,12 @@
+checkmd5 (0.104) mx; urgency=medium
+
+  * Add timecode to log entry lines.
+  * Flush each line to the log file.
+  * Fixed file descriptor and stream leaks.
+  * Fixed log file exception handling.
+
+ -- AK-47 <AK-47>  Sun, 27 Sep 2026 02:19:24 +0000
+
 checkmd5 (0.103) mx; urgency=medium
 
   * Fixed unhandled exception if terminal pipe breaks.

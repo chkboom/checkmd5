@@ -1,0 +1,39 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+Format: 1.8
+Date: Sun, 27 Sep 2026 02:19:24 +0000
+Source: checkmd5
+Architecture: source
+Version: 0.104
+Distribution: mx
+Urgency: medium
+Maintainer: AK-47
+Changed-By: AK-47 <AK-47>
+Changes:
+ checkmd5 (0.104) mx; urgency=medium
+ .
+   * Add timecode to log entry lines.
+   * Flush each line to the log file.
+   * Fixed file descriptor and stream leaks.
+   * Fixed log file exception handling.
+Checksums-Sha1:
+ 705350052a2b9d80d4569af4a2ea52398f352d71 873 checkmd5_0.104.dsc
+ c511f3763a219bbb991b01cf852f7245b16cefae 16616 checkmd5_0.104.tar.xz
+ dd7df435e9d4160e726865ae490bf917e564c81b 5516 checkmd5_0.104_source.buildinfo
+Checksums-Sha256:
+ 440e82473cfd8c8d3ea89cdc0d3701ea9c9cbf2527210ac499d259690941847f 873 checkmd5_0.104.dsc
+ 1b0cf782a7c064cc3467c217877ce4d3ce38a7abe2e762bff113d62289509c62 16616 checkmd5_0.104.tar.xz
+ 3694f444ac97c8b59fd2642baec5d74bdf346c4516cadfc2745cbff038d829d5 5516 checkmd5_0.104_source.buildinfo
+Files:
+ 1d506fe8c0299ea9e914d11b3d7fdeea 873 admin optional checkmd5_0.104.dsc
+ 9a8cb5765591d6bf9d44c340e80d4bec 16616 admin optional checkmd5_0.104.tar.xz
+ 3c67c2e31bbbfb82e026b38a6e553742 5516 admin optional checkmd5_0.104_source.buildinfo
+
+-----BEGIN PGP SIGNATURE-----
+
+iHUEARYKAB0WIQTDzdhMOiuuy/ItuTV6vPhBL8DvbQUCariApgAKCRB6vPhBL8Dv
+bcyqAP9aYgqQ0znBwHf8I9oc12SJMp1K12mA4YhBncu387vZowEApbnltOkwRq7o
+2atz1APSxD5f3AerpqMfTD9bgxnhTQU=
+=4krh
+-----END PGP SIGNATURE-----

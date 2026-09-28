@@ -1,0 +1,89 @@
+ dpkg-buildpackage -d -us -uc -ui
+dpkg-buildpackage: info: source package checkmd5
+dpkg-buildpackage: info: source version 0.104
+dpkg-buildpackage: info: source distribution mx
+dpkg-buildpackage: info: source changed by AK-47 <AK-47>
+ dpkg-source --before-build .
+dpkg-buildpackage: info: host architecture amd64
+dpkg-source: info: using options from checkmd5/debian/source/options: --tar-ignore --tar-ignore=alire --tar-ignore=config --tar-ignore=obj --tar-ignore=bin
+ debian/rules clean
+dh clean --no-automatic-dbgsym --parallel
+   debian/rules override_dh_auto_clean
+make[1]: Entering directory '/host/share/checkmd5'
+alr clean
+make[1]: Leaving directory '/host/share/checkmd5'
+   dh_autoreconf_clean -O--no-automatic-dbgsym -O--parallel
+   dh_clean -O--no-automatic-dbgsym -O--parallel
+ dpkg-source -b .
+dpkg-source: info: using options from checkmd5/debian/source/options: --tar-ignore --tar-ignore=alire --tar-ignore=config --tar-ignore=obj --tar-ignore=bin
+dpkg-source: info: using source format '3.0 (native)'
+dpkg-source: info: building checkmd5 in checkmd5_0.104.tar.xz
+dpkg-source: info: building checkmd5 in checkmd5_0.104.dsc
+ debian/rules binary
+dh binary --no-automatic-dbgsym --parallel
+   dh_update_autotools_config -O--no-automatic-dbgsym -O--parallel
+   dh_autoreconf -O--no-automatic-dbgsym -O--parallel
+   debian/rules override_dh_auto_configure
+make[1]: Entering directory '/host/share/checkmd5'
+alr update
+Nothing to update.
+make[1]: Leaving directory '/host/share/checkmd5'
+   debian/rules override_dh_auto_build
+make[1]: Entering directory '/host/share/checkmd5'
+alr build --release
+Note: Building checkmd5/checkmd5.gpr...
+Compile
+   [Ada]          checkmd5.adb
+   [C]            platsupp.c
+   [Ada]          console.adb
+   [Ada]          log.adb
+   [Ada]          mchash.adb
+   [Ada]          version.ads
+   [Ada]          platform.adb
+   [Ada]          mctypes.ads
+Bind
+   [gprbind]      checkmd5.bexch
+   [Ada]          checkmd5.ali
+Link
+   [archive]      libcheckmd5.a
+   [index]        libcheckmd5.a
+   [link]         checkmd5.adb
+Build finished successfully in 4.92 seconds.
+make[1]: Leaving directory '/host/share/checkmd5'
+   create-stamp debian/debhelper-build-stamp
+   dh_testroot -O--no-automatic-dbgsym -O--parallel
+   dh_prep -O--no-automatic-dbgsym -O--parallel
+   dh_auto_install --destdir=debian/checkmd5/ -O--no-automatic-dbgsym -O--parallel
+   dh_install -O--no-automatic-dbgsym -O--parallel
+   dh_installdocs -O--no-automatic-dbgsym -O--parallel
+   dh_installchangelogs -O--no-automatic-dbgsym -O--parallel
+   dh_installman -O--no-automatic-dbgsym -O--parallel
+   dh_installsystemduser -O--no-automatic-dbgsym -O--parallel
+   dh_perl -O--no-automatic-dbgsym -O--parallel
+   dh_link -O--no-automatic-dbgsym -O--parallel
+   dh_strip_nondeterminism -O--no-automatic-dbgsym -O--parallel
+   dh_compress -O--no-automatic-dbgsym -O--parallel
+   dh_fixperms -O--no-automatic-dbgsym -O--parallel
+   dh_missing -O--no-automatic-dbgsym -O--parallel
+   dh_dwz -a -O--no-automatic-dbgsym -O--parallel
+dwz: debian/checkmd5/usr/bin/checkmd5: .debug_info section not present
+   dh_strip -a -O--no-automatic-dbgsym -O--parallel
+   dh_makeshlibs -a -O--no-automatic-dbgsym -O--parallel
+   dh_shlibdeps -a -O--no-automatic-dbgsym -O--parallel
+   dh_installdeb -O--no-automatic-dbgsym -O--parallel
+   dh_gencontrol -O--no-automatic-dbgsym -O--parallel
+   dh_md5sums -O--no-automatic-dbgsym -O--parallel
+   dh_builddeb -O--no-automatic-dbgsym -O--parallel
+dpkg-deb: building package 'checkmd5' in '../checkmd5_0.104_amd64.deb'.
+ dpkg-genbuildinfo -O../checkmd5_0.104_amd64.buildinfo
+ dpkg-genchanges -O../checkmd5_0.104_amd64.changes
+dpkg-genchanges: info: including full source code in upload
+ dpkg-source --after-build .
+dpkg-source: info: using options from checkmd5/debian/source/options: --tar-ignore --tar-ignore=alire --tar-ignore=config --tar-ignore=obj --tar-ignore=bin
+dpkg-buildpackage: info: full upload; Debian-native package (full source is included)
+Now signing changes and any dsc files...
+ signfile dsc checkmd5_0.104.dsc AK-47 <AK-47>
+gpg: WARNING: unsafe permissions on homedir '/home/build/.gnupg'
+gpg: skipped "AK-47 <AK-47>": No secret key
+gpg: /tmp/debsign.HZG33z9Y/checkmd5_0.104.dsc: clear-sign failed: No secret key
+debsign: gpg error occurred!  Aborting....
