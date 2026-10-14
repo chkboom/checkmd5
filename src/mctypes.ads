@@ -15,7 +15,7 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 with Interfaces; use Interfaces;
-package McTypes is
+package McTypes with Pure is
 
    subtype Large_Natural is Long_Long_Integer range 0 .. Long_Long_Integer'Last;
 

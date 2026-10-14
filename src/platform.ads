@@ -20,6 +20,7 @@ with Interfaces.C;
 with McTypes; use McTypes;
 
 package Platform is
+   pragma Preelaborate(Platform);
    use Ada.Streams;
    use Interfaces.C;
    function Page_Size return Natural;
